@@ -1,0 +1,263 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load widget_tweaks %}
+
+{% block title %}Đăng ký · HCMUTE Tư Vấn Sinh Viên{% endblock %}
+
+{% block extra_css %}
+<style>
+    .auth-page {
+        min-height: calc(100vh - 200px);
+        background:
+            radial-gradient(circle at 20% 0%, rgba(11,63,140,0.08) 0%, transparent 50%),
+            radial-gradient(circle at 80% 100%, rgba(218,37,29,0.06) 0%, transparent 50%),
+            var(--bg-soft);
+        padding: 60px 16px;
+        display: flex;
+        align-items: flex-start;
+        justify-content: center;
+    }
+
+    .auth-card {
+        width: 100%;
+        max-width: 720px;   /* rộng hơn login vì nhiều field */
+        background: var(--bg);
+        border: 1px solid var(--border);
+        border-radius: var(--r-lg);
+        box-shadow: 0 8px 24px rgba(0,0,0,0.06), 0 2px 6px rgba(0,0,0,0.04);
+        overflow: hidden;
+    }
+
+    .auth-card .auth-head {
+        background: linear-gradient(135deg, var(--brand-blue) 0%, var(--brand-blue-deep) 100%);
+        padding: 36px 36px 30px;
+        color: #fff;
+        text-align: center;
+        position: relative;
+        overflow: hidden;
+    }
+    .auth-card .auth-head::before {
+        content: '';
+        position: absolute;
+        top: -60px; right: -60px;
+        width: 180px; height: 180px;
+        background: radial-gradient(circle, rgba(218,37,29,0.35) 0%, transparent 70%);
+        z-index: 0;
+        pointer-events: none;
+    }
+    .auth-card .auth-head img {
+        height: 56px;
+        margin-bottom: 14px;
+        position: relative; z-index: 1;
+    }
+    .auth-card .auth-head h2 {
+        color: #fff;
+        font-size: 1.5rem;
+        font-weight: 700;
+        line-height: 1.45;
+        letter-spacing: 0;
+        margin: 0 0 6px;
+        position: relative;
+        z-index: 1;
+        text-rendering: optimizeLegibility;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+    }
+    .auth-card .auth-head p {
+        color: rgba(255,255,255,0.85);
+        font-size: 13px;
+        line-height: 1.5;
+        margin: 0;
+        position: relative;
+        z-index: 1;
+    }
+
+    .auth-card .auth-body { padding: 32px 36px 28px; }
+
+    .auth-card .auth-foot {
+        background: var(--bg-soft);
+        padding: 16px 36px;
+        text-align: center;
+        font-size: 14px;
+        border-top: 1px solid var(--border);
+    }
+    .auth-card .auth-foot a {
+        color: var(--brand-red);
+        font-weight: 700;
+        text-decoration: none;
+    }
+    .auth-card .auth-foot a:hover { text-decoration: underline; }
+
+    /* Section divider giữa các nhóm field */
+    .form-section-title {
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: var(--text-3);
+        margin: 18px 0 10px;
+    }
+
+    @media (max-width: 480px) {
+        .auth-card .auth-head { padding: 28px 24px 22px; }
+        .auth-card .auth-body { padding: 24px; }
+        .auth-card .auth-foot { padding: 14px 24px; }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="auth-page">
+    <div class="auth-card">
+
+        {# ─── Header ─── #}
+        <div class="auth-head">
+            <img src="{% static 'img/logo-hcmute.png' %}" alt="HCMUTE"
+                 onerror="this.style.display='none'">
+            <h2>Đăng ký tài khoản</h2>
+            <p>HCMUTE · Tư vấn Sinh viên</p>
+        </div>
+
+        {# ─── Body ─── #}
+        <div class="auth-body">
+            {% if next %}
+            <div class="alert alert-info py-2 mb-4" style="font-size: 13px;">
+                <i class="fas fa-info-circle me-1"></i>
+                Tạo tài khoản để tiếp tục sử dụng tính năng bạn đang truy cập.
+            </div>
+            {% endif %}
+
+            <form method="post">
+                {% csrf_token %}
+                <input type="hidden" name="next" value="{{ next }}">
+
+                {# ─── Thông tin tài khoản ─── #}
+                <div class="form-section-title">Thông tin tài khoản</div>
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label for="{{ form.username.id_for_label }}" class="form-label">{{ form.username.label }}</label>
+                        {% if form.username.errors %}
+                        <div class="alert alert-danger py-2 mb-2" style="font-size: 13px;">{{ form.username.errors|join:" · " }}</div>
+                        {% endif %}
+                        {{ form.username|add_class:"form-control" }}
+                    </div>
+                    <div class="col-md-6">
+                        <label for="{{ form.email.id_for_label }}" class="form-label">{{ form.email.label }}</label>
+                        {% if form.email.errors %}
+                        <div class="alert alert-danger py-2 mb-2" style="font-size: 13px;">{{ form.email.errors|join:" · " }}</div>
+                        {% endif %}
+                        {{ form.email|add_class:"form-control" }}
+                    </div>
+                </div>
+
+                {# ─── Họ tên ─── #}
+                <div class="form-section-title">Họ và tên</div>
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label for="{{ form.first_name.id_for_label }}" class="form-label">{{ form.first_name.label }}</label>
+                        {% if form.first_name.errors %}
+                        <div class="alert alert-danger py-2 mb-2" style="font-size: 13px;">{{ form.first_name.errors|join:" · " }}</div>
+                        {% endif %}
+                        {{ form.first_name|add_class:"form-control" }}
+                    </div>
+                    <div class="col-md-6">
+                        <label for="{{ form.last_name.id_for_label }}" class="form-label">{{ form.last_name.label }}</label>
+                        {% if form.last_name.errors %}
+                        <div class="alert alert-danger py-2 mb-2" style="font-size: 13px;">{{ form.last_name.errors|join:" · " }}</div>
+                        {% endif %}
+                        {{ form.last_name|add_class:"form-control" }}
+                    </div>
+                </div>
+
+                {# ─── Mật khẩu ─── #}
+                <div class="form-section-title">Mật khẩu</div>
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label for="{{ form.password1.id_for_label }}" class="form-label">{{ form.password1.label }}</label>
+                        {% if form.password1.errors %}
+                        <div class="alert alert-danger py-2 mb-2" style="font-size: 13px;">{{ form.password1.errors|join:" · " }}</div>
+                        {% endif %}
+                        {{ form.password1|add_class:"form-control" }}
+                        {% if form.password1.help_text %}
+                        <div class="form-text mt-1" style="font-size: 11px;">{{ form.password1.help_text|safe }}</div>
+                        {% endif %}
+                    </div>
+                    <div class="col-md-6">
+                        <label for="{{ form.password2.id_for_label }}" class="form-label">{{ form.password2.label }}</label>
+                        {% if form.password2.errors %}
+                        <div class="alert alert-danger py-2 mb-2" style="font-size: 13px;">{{ form.password2.errors|join:" · " }}</div>
+                        {% endif %}
+                        {{ form.password2|add_class:"form-control" }}
+                    </div>
+                </div>
+
+                {# ─── Loại người dùng ─── #}
+                <div class="form-section-title">Loại tài khoản</div>
+                {% if form.user_type.errors %}
+                <div class="alert alert-danger py-2 mb-2" style="font-size: 13px;">{{ form.user_type.errors|join:" · " }}</div>
+                {% endif %}
+                <div class="d-flex flex-wrap gap-3 mb-2">
+                    {% for radio in form.user_type %}
+                    <div class="form-check">
+                        {{ radio.tag }}
+                        <label class="form-check-label" for="{{ radio.id_for_label }}">
+                            {{ radio.choice_label }}
+                        </label>
+                    </div>
+                    {% endfor %}
+                </div>
+
+                {# ─── Thông tin bổ sung ─── #}
+                <div class="form-section-title">Thông tin bổ sung</div>
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label for="{{ form.student_id.id_for_label }}" class="form-label">{{ form.student_id.label }}</label>
+                        {% if form.student_id.errors %}
+                        <div class="alert alert-danger py-2 mb-2" style="font-size: 13px;">{{ form.student_id.errors|join:" · " }}</div>
+                        {% endif %}
+                        {{ form.student_id|add_class:"form-control" }}
+                        <div class="form-text" style="font-size: 11px;">Bắt buộc với sinh viên và cựu sinh viên</div>
+                    </div>
+                    <div class="col-md-6">
+                        <label for="{{ form.graduation_year.id_for_label }}" class="form-label">{{ form.graduation_year.label }}</label>
+                        {% if form.graduation_year.errors %}
+                        <div class="alert alert-danger py-2 mb-2" style="font-size: 13px;">{{ form.graduation_year.errors|join:" · " }}</div>
+                        {% endif %}
+                        {{ form.graduation_year|add_class:"form-control" }}
+                        <div class="form-text" style="font-size: 11px;">Bắt buộc với cựu sinh viên</div>
+                    </div>
+                    <div class="col-md-6">
+                        <label for="{{ form.phone_number.id_for_label }}" class="form-label">{{ form.phone_number.label }}</label>
+                        {% if form.phone_number.errors %}
+                        <div class="alert alert-danger py-2 mb-2" style="font-size: 13px;">{{ form.phone_number.errors|join:" · " }}</div>
+                        {% endif %}
+                        {{ form.phone_number|add_class:"form-control" }}
+                        <div class="form-text" style="font-size: 11px;">Bắt buộc với phụ huynh</div>
+                    </div>
+                    <div class="col-md-6">
+                        <label for="{{ form.grade.id_for_label }}" class="form-label">{{ form.grade.label }}</label>
+                        {% if form.grade.errors %}
+                        <div class="alert alert-danger py-2 mb-2" style="font-size: 13px;">{{ form.grade.errors|join:" · " }}</div>
+                        {% endif %}
+                        {{ form.grade|add_class:"form-control" }}
+                        <div class="form-text" style="font-size: 11px;">Bắt buộc với học sinh phổ thông</div>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn btn-primary w-100 btn-lg mt-4">
+                    Tạo tài khoản <i class="fas fa-arrow-right ms-1"></i>
+                </button>
+            </form>
+        </div>
+
+        {# ─── Footer ─── #}
+        <div class="auth-foot">
+            <span class="muted">Đã có tài khoản?</span>
+            <a href="{% url 'login' %}{% if next %}?next={{ next }}{% endif %}">
+                Đăng nhập <i class="fas fa-arrow-right ms-1"></i>
+            </a>
+        </div>
+
+    </div>
+</div>
+{% endblock %}

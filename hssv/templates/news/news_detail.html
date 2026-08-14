@@ -1,0 +1,722 @@
+{% extends 'base.html' %}
+{% load widget_tweaks %}
+
+{% block title %}{{ news.title }} · Tin tức{% endblock %}
+
+{% block extra_css %}
+<style>
+    .article-hero {
+        position: relative;
+        background: linear-gradient(135deg, var(--brand-blue) 0%, var(--brand-blue-deep) 100%);
+        background-size: cover;
+        background-position: center;
+        padding: 80px 0 60px;
+        color: #fff;
+        margin-bottom: 0;
+    }
+    .article-hero::after {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(180deg, rgba(11,63,140,0.6) 0%, rgba(11,63,140,0.95) 100%);
+        z-index: 0;
+    }
+    .article-hero .container { position: relative; z-index: 1; }
+    .article-hero .cat-badge {
+        display: inline-block;
+        background: var(--brand-red);
+        padding: 5px 14px;
+        border-radius: 999px;
+        font-size: 12px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        margin-bottom: 16px;
+    }
+    .article-hero h1 {
+        color: #fff;
+        font-size: clamp(1.75rem, 4vw, 2.5rem);
+        font-weight: 800;
+        line-height: 1.2;
+        max-width: 900px;
+    }
+    .article-hero .meta {
+        display: flex;
+        gap: 18px;
+        margin-top: 18px;
+        color: rgba(255,255,255,0.85);
+        font-size: 13px;
+        flex-wrap: wrap;
+    }
+
+    .article-content {
+        background: var(--bg);
+        max-width: 900px;
+        margin: -30px auto 0;
+        position: relative;
+        z-index: 5;
+        border-radius: var(--r-lg);
+        box-shadow: var(--shadow);
+        padding: 40px;
+    }
+    .article-content p {
+        font-size: 16px;
+        line-height: 1.75;
+        color: var(--text-2);
+        margin-bottom: 1.2em;
+    }
+    .article-content p:first-of-type::first-letter {
+        font-size: 3.5em;
+        font-weight: 800;
+        float: left;
+        line-height: 0.9;
+        margin: 4px 12px 0 0;
+        color: var(--brand-red);
+    }
+
+    /* HTML từ Quill editor: img, headings, lists, blockquote... */
+    .article-html img {
+        max-width: 100%;
+        height: auto;
+        border-radius: var(--r-lg);
+        margin: 24px auto;
+        display: block;
+        box-shadow: var(--shadow);
+    }
+    .article-html h1, .article-html h2, .article-html h3 {
+        margin: 1.4em 0 0.6em;
+        color: var(--text);
+        line-height: 1.3;
+    }
+    .article-html h1 { font-size: 1.8rem; }
+    .article-html h2 { font-size: 1.5rem; }
+    .article-html h3 { font-size: 1.25rem; }
+    .article-html ul, .article-html ol {
+        margin: 0 0 1.2em 1.6em;
+        line-height: 1.75;
+        color: var(--text-2);
+    }
+    .article-html li { margin-bottom: 6px; }
+    .article-html blockquote {
+        border-left: 4px solid var(--brand-blue);
+        margin: 1.2em 0;
+        padding: 8px 20px;
+        background: var(--bg-soft);
+        color: var(--text-2);
+        font-style: italic;
+        border-radius: 0 8px 8px 0;
+    }
+    .article-html pre, .article-html code {
+        background: var(--bg-section);
+        border-radius: 6px;
+        padding: 2px 6px;
+        font-family: var(--font-mono);
+        font-size: 0.95em;
+    }
+    .article-html pre {
+        padding: 14px 18px;
+        overflow-x: auto;
+        line-height: 1.5;
+        margin: 1em 0;
+    }
+    .article-html a {
+        color: var(--brand-blue);
+        text-decoration: underline;
+    }
+    /* Bỏ drop-cap khi content có <h1>/<img> đầu tiên — chỉ áp dụng cho p đầu tiên */
+    .article-html p:first-child::first-letter {
+        font-size: 3.5em;
+        font-weight: 800;
+        float: left;
+        line-height: 0.9;
+        margin: 4px 12px 0 0;
+        color: var(--brand-red);
+    }
+
+    .author-card {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        padding: 18px 0;
+        border-top: 1px solid var(--border);
+        border-bottom: 1px solid var(--border);
+        margin: 32px 0;
+    }
+    .author-card .avatar {
+        width: 48px; height: 48px;
+        background: var(--brand-red);
+        color: #fff;
+        border-radius: 50%;
+        display: inline-flex;
+        align-items: center; justify-content: center;
+        font-weight: 800;
+    }
+
+    .comment-section { max-width: 900px; margin: 0 auto; padding: 40px 24px; }
+    .comment-list { margin-top: 24px; }
+    .comment-item {
+        display: flex;
+        gap: 12px;
+        padding: 16px 0;
+        border-bottom: 1px solid var(--border);
+        align-items: flex-start;
+    }
+    .comment-item:last-child { border-bottom: 0; }
+    .comment-item .avatar {
+        width: 38px; height: 38px;
+        background: #e9ecef;
+        color: #495057;
+        border-radius: 50%;
+        display: inline-flex;
+        align-items: center; justify-content: center;
+        font-weight: 600;
+        flex-shrink: 0;
+        font-size: 15px;
+    }
+    .comment-item .body { flex: 1; }
+    .comment-item .body .author-name {
+        font-size: 15px;
+        color: #222;
+        margin-bottom: 4px;
+    }
+    .comment-item .body .text {
+        font-size: 15px;
+        color: #222;
+        line-height: 1.5;
+        white-space: pre-wrap;
+        margin-bottom: 8px;
+    }
+    .comment-item .body .author-name strong { color: #222; font-weight: 700; margin-right: 4px; }
+    
+    .comment-item .actions { font-size: 13.5px; color: #757575; width: 100%; }
+    .comment-item .actions button.btn-action, .comment-item .actions .action-text {
+        background: none; border: none; padding: 0; color: #757575; font-size: 13.5px; cursor: pointer;
+        display: inline-flex; align-items: center; gap: 4px; font-weight: 500; transition: color 0.15s;
+    }
+    .comment-item .actions button.btn-action:hover, .comment-item .actions .action-text:hover { color: #222; }
+    .comment-item .actions .time-ago { color: #999; font-weight: 400; font-size: 13px; }
+
+    /* Reply: nested 1 cấp */
+    .comment-replies {
+        margin: 12px 0 0 50px;
+    }
+    .comment-replies .comment-item {
+        padding: 10px 0;
+        border-bottom: none;
+    }
+    .comment-replies .comment-item .avatar {
+        width: 32px; height: 32px;
+        font-size: 13px;
+    }
+    .reply-form {
+        margin-top: 12px;
+        display: none;
+        padding: 14px;
+        background: var(--bg-soft);
+        border-radius: 8px;
+        border: 1px solid var(--border);
+    }
+    .reply-form.show { display: block; }
+    .reply-form textarea {
+        width: 100%;
+        min-height: 70px;
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        padding: 8px 12px;
+        font-family: var(--font-sans);
+        font-size: 13px;
+        resize: vertical;
+    }
+    .reply-form textarea:focus {
+        outline: none;
+        border-color: var(--brand-blue);
+        box-shadow: 0 0 0 3px var(--brand-blue-soft);
+    }
+    .reply-form .reply-actions {
+        display: flex;
+        gap: 8px;
+        margin-top: 8px;
+        justify-content: flex-end;
+    }
+    .reply-form .btn-sm {
+        padding: 5px 14px;
+        font-size: 12.5px;
+    }
+    .reply-target-label {
+        font-size: 12px;
+        color: var(--text-3);
+        margin-bottom: 6px;
+    }
+    .reply-target-label strong { color: var(--brand-blue); }
+
+    .comment-form-card {
+        background: var(--bg-soft);
+        border: 1px solid var(--border);
+        border-radius: var(--r);
+        padding: 18px;
+        margin-bottom: 24px;
+    }
+
+    /* Related */
+    .related-grid {
+        max-width: 900px; margin: 0 auto; padding: 0 24px 60px;
+    }
+
+    /* Like bar */
+    .like-bar {
+        max-width: 900px;
+        margin: 24px auto 0;
+        padding: 0 24px;
+        display: flex;
+        gap: 12px;
+        align-items: center;
+        flex-wrap: wrap;
+    }
+    .btn-like {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        background: var(--bg);
+        border: 1.5px solid var(--border);
+        border-radius: 999px;
+        padding: 10px 20px;
+        font-weight: 700;
+        color: var(--text-2);
+        font-size: 14px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+    .btn-like:hover {
+        border-color: var(--brand-red);
+        color: var(--brand-red);
+        transform: translateY(-1px);
+    }
+    .btn-like.liked {
+        background: var(--brand-red);
+        border-color: var(--brand-red);
+        color: #fff;
+    }
+    .btn-like .heart-icon {
+        font-size: 18px;
+        transition: transform 0.2s ease;
+    }
+    .btn-like.liked .heart-icon { animation: heartbeat 0.4s ease; }
+    @keyframes heartbeat {
+        0% { transform: scale(1); }
+        50% { transform: scale(1.4); }
+        100% { transform: scale(1); }
+    }
+    .like-meta { color: var(--text-3); font-size: 13px; }
+</style>
+{% endblock %}
+
+{% block content %}
+
+{# ─── HERO ─── #}
+{% with hero_src=news.thumbnail_src %}
+<section class="article-hero"
+         {% if hero_src %}style="background-image: url('{{ hero_src }}');"{% endif %}>
+{% endwith %}
+    <div class="container">
+        <a href="{% url 'news:list' %}" style="color: rgba(255,255,255,0.8); font-size: 13px; text-decoration: none; margin-bottom: 12px; display: inline-block;">
+            <i class="fas fa-arrow-left"></i> Tất cả tin tức
+        </a>
+        <div>
+            <span class="cat-badge">{{ news.get_category_display }}</span>
+        </div>
+        <h1>{{ news.title }}</h1>
+        <div class="meta">
+            <span><i class="far fa-user"></i> {{ news.author.get_full_name|default:news.author.username }}</span>
+            <span><i class="far fa-calendar"></i> {{ news.created_at|date:"d/m/Y" }}</span>
+            <span><i class="far fa-eye"></i> {{ news.views_count }} lượt xem</span>
+            {% if news.department %}
+            <span><i class="far fa-building"></i> {{ news.department.name }}</span>
+            {% endif %}
+        </div>
+    </div>
+</section>
+
+{# ─── CONTENT ─── #}
+<article class="article-content">
+    {# Nội dung là HTML từ Quill editor (có thể chứa <img>, <strong>, <h2>...). #}
+    {# Chỉ tư vấn viên/admin mới đăng được nên trust nguồn — render |safe. #}
+    <div class="content-body article-html">
+        {{ news.content|safe }}
+    </div>
+
+    <div class="author-card">
+        <div class="avatar">
+            {{ news.author.first_name.0|default:news.author.username.0|upper }}
+        </div>
+        <div>
+            <div style="font-weight: 700;">{{ news.author.get_full_name|default:news.author.username }}</div>
+            <div class="muted" style="font-size: 13px;">
+                Tác giả · Đăng ngày {{ news.created_at|date:"d/m/Y H:i" }}
+            </div>
+        </div>
+    </div>
+</article>
+
+{# ─── LIKE BAR ─── #}
+<div class="like-bar">
+    {% if user.is_authenticated %}
+    <button id="btn-like"
+            class="btn-like {% if user_liked %}liked{% endif %}"
+            data-url="{% url 'news:toggle_like' news.slug %}"
+            type="button">
+        <i class="{% if user_liked %}fas{% else %}far{% endif %} fa-heart heart-icon"></i>
+        <span id="like-label">{% if user_liked %}Đã thích{% else %}Thích bài viết{% endif %}</span>
+    </button>
+    {% else %}
+    <a href="{% url 'login' %}?next={{ request.path }}" class="btn-like" title="Đăng nhập để thả tim">
+        <i class="far fa-heart heart-icon"></i>
+        <span>Thích bài viết</span>
+    </a>
+    {% endif %}
+    <span class="like-meta">
+        <strong id="like-count">{{ like_count }}</strong> lượt thích
+        · <i class="far fa-eye"></i> {{ news.views_count }} lượt xem
+        · <i class="far fa-comment"></i> {{ comments.count }} bình luận
+    </span>
+</div>
+
+{# ─── COMMENTS ─── #}
+<section class="comment-section">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h3 style="margin: 0;"><i class="far fa-comments text-blue"></i> Bình luận ({{ comments.count }})</h3>
+    </div>
+
+    {% if user.is_authenticated %}
+    <div class="comment-form-card">
+        <form method="post" action="{% url 'news:add_comment' news.slug %}">
+            {% csrf_token %}
+            <div class="d-flex gap-3 align-items-start">
+                <div style="width: 40px; height: 40px; background: var(--brand-red); color: #fff;
+                            border-radius: 50%; display: inline-flex; align-items: center; justify-content: center;
+                            font-weight: 700; flex-shrink: 0;">
+                    {{ user.first_name.0|default:user.username.0|upper }}
+                </div>
+                <div style="flex: 1;">
+                    <div class="form-text mb-2" style="margin-top: 0;">
+                        Đang bình luận với tên <strong>{{ user.get_full_name|default:user.username }}</strong>
+                    </div>
+                    {{ comment_form.content|add_class:"form-control" }}
+                    <div class="d-flex justify-content-end mt-2">
+                        <button type="submit" class="btn btn-primary btn-sm">
+                            <i class="fas fa-paper-plane"></i> Gửi bình luận
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </form>
+    </div>
+    {% else %}
+    <div class="alert alert-info">
+        <a href="{% url 'login' %}" class="text-blue" style="font-weight: 700;">Đăng nhập</a>
+        để bình luận về bài viết này.
+    </div>
+    {% endif %}
+
+    <div class="comment-list">
+        {% for c in comments %}
+        <div class="comment-item" id="comment-{{ c.id }}">
+            <div class="avatar">
+                {{ c.user.first_name.0|default:c.user.username.0|upper }}
+            </div>
+            <div class="body">
+                <div class="author-name">
+                    <strong>{{ c.user.get_full_name|default:c.user.username }}</strong>
+                    {% if c.user.advisorprofile %}<span class="badge bg-info" style="margin-left: 2px; font-size: 10px; vertical-align: baseline;">Tư vấn viên</span>{% endif %}
+                </div>
+                <div class="text">{{ c.content }}</div>
+
+                <div class="actions d-flex gap-3 align-items-center flex-wrap">
+                    <button type="button" class="btn-action" onclick="toggleCommentLike(this)" data-count="0"><i class="far fa-thumbs-up"></i> <span>Thích</span> <span class="like-count"></span></button>
+                    {% if user.is_authenticated %}
+                    <button type="button" class="btn-action" data-toggle-reply="reply-form-{{ c.id }}">Trả lời</button>
+                    {% endif %}
+                    <button type="button" class="btn-action" title="Báo cáo" data-bs-toggle="modal" data-bs-target="#reportModal"><i class="far fa-flag"></i> <span>Báo cáo</span></button>
+
+                    {% if c.visible_replies_list %}
+                    <span class="muted small">{{ c.visible_replies_list|length }} phản hồi</span>
+                    {% endif %}
+                    {% if can_moderate %}
+                    <form method="post" action="{% url 'news:hide_comment' c.id %}" style="display: inline;" onsubmit="return confirm('Ẩn bình luận này?');">
+                        {% csrf_token %}
+                        <button type="submit" class="btn-action" style="color: var(--brand-red);"><i class="fas fa-eye-slash"></i> Ẩn</button>
+                    </form>
+                    {% endif %}
+                    
+                    <div class="time-ago">{{ c.created_at|timesince }} trước</div>
+                </div>
+
+                {# Form reply inline (ẩn mặc định, toggle khi click "Trả lời") #}
+                {% if user.is_authenticated %}
+                <form method="post" action="{% url 'news:add_comment' news.slug %}"
+                      class="reply-form" id="reply-form-{{ c.id }}">
+                    {% csrf_token %}
+                    <input type="hidden" name="parent_id" value="{{ c.id }}">
+                    <div class="reply-target-label">
+                        Đang trả lời <strong>{{ c.user.get_full_name|default:c.user.username }}</strong>
+                    </div>
+                    <textarea name="content" placeholder="Nhập phản hồi của bạn..." required></textarea>
+                    <div class="reply-actions">
+                        <button type="button" class="btn btn-light btn-sm" data-cancel-reply="reply-form-{{ c.id }}">Huỷ</button>
+                        <button type="submit" class="btn btn-primary btn-sm">
+                            <i class="far fa-paper-plane"></i> Gửi phản hồi
+                        </button>
+                    </div>
+                </form>
+                {% endif %}
+
+                {# ─── Danh sách REPLIES (lồng 1 cấp) ─── #}
+                {% if c.visible_replies_list %}
+                <div class="comment-replies">
+                    {% for r in c.visible_replies_list %}
+                    <div class="comment-item" id="comment-{{ r.id }}">
+                        <div class="avatar">
+                            {{ r.user.first_name.0|default:r.user.username.0|upper }}
+                        </div>
+                        <div class="body">
+                            <div class="author-name">
+                                <strong>{{ r.user.get_full_name|default:r.user.username }}</strong>
+                                {% if r.user.advisorprofile %}<span class="badge bg-info" style="margin-left: 2px; font-size: 10px; vertical-align: baseline;">Tư vấn viên</span>{% endif %}
+                            </div>
+                            <div class="text">{{ r.content }}</div>
+
+                            <div class="actions d-flex gap-3 align-items-center flex-wrap">
+                                <button type="button" class="btn-action" onclick="toggleCommentLike(this)" data-count="0"><i class="far fa-thumbs-up"></i> <span>Thích</span> <span class="like-count"></span></button>
+                                {% if user.is_authenticated %}
+                                <button type="button" class="btn-action" data-toggle-reply="reply-form-{{ r.id }}">Trả lời</button>
+                                {% endif %}
+                                <button type="button" class="btn-action" title="Báo cáo" data-bs-toggle="modal" data-bs-target="#reportModal"><i class="far fa-flag"></i> <span>Báo cáo</span></button>
+
+                                {% if can_moderate %}
+                                <form method="post" action="{% url 'news:hide_comment' r.id %}" style="display: inline;" onsubmit="return confirm('Ẩn phản hồi này?');">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn-action" style="color: var(--brand-red);"><i class="fas fa-eye-slash"></i> Ẩn</button>
+                                </form>
+                                {% endif %}
+                                
+                                <div class="time-ago">{{ r.created_at|timesince }} trước</div>
+                            </div>
+
+                            {# Form reply cho reply: parent_id vẫn trỏ về comment gốc c.id (flatten) #}
+                            {% if user.is_authenticated %}
+                            <form method="post" action="{% url 'news:add_comment' news.slug %}"
+                                  class="reply-form" id="reply-form-{{ r.id }}">
+                                {% csrf_token %}
+                                <input type="hidden" name="parent_id" value="{{ c.id }}">
+                                <div class="reply-target-label">
+                                    Đang trả lời <strong>{{ r.user.get_full_name|default:r.user.username }}</strong>
+                                </div>
+                                <textarea name="content" placeholder="Nhập phản hồi của bạn..." required>@{{ r.user.get_full_name|default:r.user.username }} </textarea>
+                                <div class="reply-actions">
+                                    <button type="button" class="btn btn-light btn-sm" data-cancel-reply="reply-form-{{ r.id }}">Huỷ</button>
+                                    <button type="submit" class="btn btn-primary btn-sm">
+                                        <i class="far fa-paper-plane"></i> Gửi phản hồi
+                                    </button>
+                                </div>
+                            </form>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        {% empty %}
+        <div class="text-center py-5 muted">
+            <i class="far fa-comment-dots" style="font-size: 2rem; margin-bottom: 12px;"></i>
+            <p>Chưa có bình luận nào. Hãy là người đầu tiên!</p>
+        </div>
+        {% endfor %}
+    </div>
+
+    {# ─── JS toggle reply form ─── #}
+    <script>
+    (function () {
+        document.querySelectorAll('[data-toggle-reply]').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const targetId = btn.getAttribute('data-toggle-reply');
+                const form = document.getElementById(targetId);
+                if (!form) return;
+                // Đóng các form khác đang mở (để chỉ 1 form mở 1 lúc)
+                document.querySelectorAll('.reply-form.show').forEach(f => {
+                    if (f.id !== targetId) f.classList.remove('show');
+                });
+                form.classList.toggle('show');
+                if (form.classList.contains('show')) {
+                    const ta = form.querySelector('textarea');
+                    if (ta) ta.focus();
+                }
+            });
+        });
+        document.querySelectorAll('[data-cancel-reply]').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const targetId = btn.getAttribute('data-cancel-reply');
+                const form = document.getElementById(targetId);
+                if (form) form.classList.remove('show');
+            });
+        });
+    })();
+    </script>
+</section>
+
+{# ─── RELATED ─── #}
+{% if related %}
+<section class="related-grid">
+    <h3 class="mb-4"><span class="eyebrow">Cùng phân loại</span><br>Bài viết liên quan</h3>
+    <div class="row g-3">
+        {% for r in related %}
+        <div class="col-md-4">
+            <a href="{{ r.get_absolute_url }}" class="text-decoration-none">
+                <div class="card h-100">
+                    {% with r_src=r.thumbnail_src %}
+                    {% if r_src %}
+                    <div style="aspect-ratio: 16/9; background-image: url('{{ r_src }}');
+                                background-size: cover; background-position: center;"></div>
+                    {% endif %}
+                    {% endwith %}
+                    <div class="card-body">
+                        <div class="font-mono muted-2 mb-2" style="font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase;">
+                            {{ r.get_category_display }}
+                        </div>
+                        <h5 style="font-size: 1rem; margin-bottom: 8px; color: var(--text);">{{ r.title }}</h5>
+                        <div class="muted" style="font-size: 12px;">{{ r.created_at|date:"d/m/Y" }}</div>
+                    </div>
+                </div>
+            </a>
+        </div>
+        {% endfor %}
+    </div>
+</section>
+{% endif %}
+
+{# ─── AJAX cho nút thả tim ─── #}
+{# Đọc CSRF từ cookie (Django auto-set csrftoken cookie khi có form trên page). #}
+{# Endpoint trả JSON {liked: bool, like_count: int} → cập nhật icon + counter mà không reload. #}
+<script>
+(function () {
+    const btn = document.getElementById('btn-like');
+    if (!btn || btn.tagName !== 'BUTTON') return;  // anonymous user → là <a>, skip
+
+    function getCookie(name) {
+        const m = document.cookie.match('(^|;)\\s*' + name + '\\s*=\\s*([^;]+)');
+        return m ? decodeURIComponent(m.pop()) : '';
+    }
+
+    btn.addEventListener('click', async function () {
+        btn.disabled = true;
+        try {
+            const res = await fetch(btn.dataset.url, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': getCookie('csrftoken'),
+                    'Accept': 'application/json',
+                },
+                credentials: 'same-origin',
+            });
+            if (!res.ok) throw new Error('HTTP ' + res.status);
+            const data = await res.json();
+
+            const icon = btn.querySelector('.heart-icon');
+            const label = document.getElementById('like-label');
+            const count = document.getElementById('like-count');
+
+            if (data.liked) {
+                btn.classList.add('liked');
+                icon.classList.replace('far', 'fas');
+                label.textContent = 'Đã thích';
+            } else {
+                btn.classList.remove('liked');
+                icon.classList.replace('fas', 'far');
+                label.textContent = 'Thích bài viết';
+            }
+            count.textContent = data.like_count;
+        } catch (err) {
+            console.error('Like error:', err);
+            alert('Không thể cập nhật. Vui lòng thử lại.');
+        } finally {
+            btn.disabled = false;
+        }
+    });
+})();
+
+function toggleCommentLike(btn) {
+    const icon = btn.querySelector('i');
+    let countSpan = btn.querySelector('.like-count');
+    let count = parseInt(btn.getAttribute('data-count') || '0');
+
+    if (icon.classList.contains('far')) {
+        icon.classList.replace('far', 'fas');
+        icon.style.color = 'var(--brand-red)';
+        btn.style.color = 'var(--brand-red)';
+        count++;
+    } else {
+        icon.classList.replace('fas', 'far');
+        icon.style.color = '';
+        btn.style.color = '';
+        count--;
+    }
+    
+    btn.setAttribute('data-count', count);
+    if (count > 0) {
+        countSpan.textContent = count;
+        countSpan.style.marginLeft = '3px';
+    } else {
+        countSpan.textContent = '';
+        countSpan.style.marginLeft = '0';
+    }
+}
+
+function submitReport() {
+    alert("Đã gửi báo cáo vi phạm thành công!");
+    const reportModalEl = document.getElementById('reportModal');
+    const reportModal = bootstrap.Modal.getInstance(reportModalEl);
+    if (reportModal) {
+        reportModal.hide();
+    }
+    document.getElementById('reportForm').reset();
+}
+</script>
+
+{# ─── MODAL BÁO VI PHẠM ─── #}
+<div class="modal fade" id="reportModal" tabindex="-1" aria-labelledby="reportModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header border-0 pb-0">
+                <h5 class="modal-title w-100 text-center fw-bold" id="reportModalLabel" style="font-size: 1.25rem;">Báo vi phạm</h5>
+                <button type="button" class="btn-close position-absolute end-0 me-3" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4">
+                <form id="reportForm">
+                    <div class="mb-3">
+                        <label class="form-label text-dark fw-medium">Chọn lý do Vi phạm</label>
+                        <select class="form-select" required>
+                            <option value="">Chọn</option>
+                            <option value="1">Ngôn từ đả kích, thù ghét</option>
+                            <option value="2">Spam, quảng cáo</option>
+                            <option value="3">Nội dung không liên quan</option>
+                            <option value="4">Khác</option>
+                        </select>
+                    </div>
+                    <div class="mb-4">
+                        <label class="form-label text-dark fw-medium">Ý kiến:</label>
+                        <textarea class="form-control" rows="4" placeholder="Nội dung phản hồi khác"></textarea>
+                    </div>
+                    <div class="mb-4">
+                        <label class="form-label text-dark fw-medium">Địa chỉ email của bạn:</label>
+                        <input type="email" class="form-control" placeholder="Email">
+                    </div>
+                    <div class="text-end mt-2">
+                        <button type="button" class="btn btn-primary px-4 py-2" style="background-color: #b03060; border-color: #b03060; font-weight: 600;" onclick="submitReport()">Gửi</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}

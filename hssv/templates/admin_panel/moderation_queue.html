@@ -1,0 +1,232 @@
+{% extends 'admin_panel/base_admin.html' %}
+
+{% block title %}Kiểm duyệt nội dung · Admin Panel{% endblock %}
+
+{% block crumb_section %}Nội dung{% endblock %}
+{% block crumb_page %}Kiểm duyệt nội dung{% endblock %}
+
+{% block extra_css %}
+<style>
+    .mod-card {
+        background: #fff;
+        border: 1px solid var(--border);
+        border-radius: var(--r-lg);
+        padding: 18px 22px;
+        margin-bottom: 14px;
+        border-left: 4px solid var(--danger);
+    }
+    .mod-card.status-approved { border-left-color: var(--success); opacity: 0.7; }
+    .mod-card.status-hidden { border-left-color: var(--text-3); opacity: 0.7; }
+    .mod-card.status-warned { border-left-color: var(--warning); opacity: 0.85; }
+
+    .mod-meta {
+        display: flex; gap: 14px;
+        flex-wrap: wrap;
+        font-size: 12px;
+        color: var(--text-3);
+        margin-bottom: 10px;
+    }
+    .mod-meta strong { color: var(--text); }
+    .mod-content {
+        background: var(--bg-soft);
+        padding: 12px 16px;
+        border-radius: 8px;
+        margin-bottom: 12px;
+        font-size: 14px;
+        line-height: 1.55;
+        white-space: pre-wrap;
+        word-wrap: break-word;
+        border: 1px solid var(--border);
+    }
+    .mod-tags {
+        display: inline-flex; gap: 6px;
+        flex-wrap: wrap;
+        margin-bottom: 10px;
+    }
+    .mod-tag {
+        background: var(--danger-soft);
+        color: var(--danger);
+        padding: 3px 10px;
+        border-radius: 999px;
+        font-size: 11px;
+        font-weight: 700;
+        font-family: var(--font-mono);
+    }
+    .badge-source {
+        font-size: 11px;
+        padding: 3px 10px;
+        border-radius: 999px;
+        font-weight: 700;
+    }
+    .badge-source.chat { background: var(--brand-blue-soft); color: var(--brand-blue); }
+    .badge-source.comment { background: var(--brand-red-soft); color: var(--brand-red); }
+    .badge-status {
+        font-size: 11px;
+        padding: 3px 10px;
+        border-radius: 999px;
+        font-weight: 700;
+    }
+    .badge-status.pending { background: var(--warning-soft); color: var(--warning); }
+    .badge-status.approved { background: var(--success-soft); color: var(--success); }
+    .badge-status.hidden { background: #e5e7ec; color: var(--text-3); }
+    .badge-status.warned { background: var(--warning-soft); color: var(--warning); }
+
+    .mod-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+    .filter-tabs {
+        display: flex; gap: 4px;
+        margin-bottom: 20px;
+        border-bottom: 1px solid var(--border);
+    }
+    .filter-tab {
+        padding: 10px 18px;
+        background: transparent;
+        border: none;
+        border-bottom: 2px solid transparent;
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--text-3);
+        cursor: pointer;
+        text-decoration: none;
+    }
+    .filter-tab:hover { color: var(--brand-red); text-decoration: none; }
+    .filter-tab.active {
+        color: var(--brand-red);
+        border-bottom-color: var(--brand-red);
+    }
+    .filter-tab .count {
+        background: var(--brand-red-soft);
+        color: var(--brand-red);
+        padding: 1px 8px;
+        border-radius: 999px;
+        font-size: 11px;
+        margin-left: 4px;
+    }
+    .filter-tab.active .count { background: var(--brand-red); color: #fff; }
+    .empty-state {
+        text-align: center;
+        padding: 60px 20px;
+        color: var(--text-3);
+    }
+    .empty-state i { font-size: 56px; opacity: 0.4; margin-bottom: 16px; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-head" style="margin-bottom: 20px;">
+    <h1 style="font-size: 1.5rem; margin-bottom: 4px;">
+        <i class="fas fa-shield-alt me-2 text-danger"></i> Kiểm duyệt nội dung
+    </h1>
+    <p class="muted mb-0" style="font-size: 13px;">
+        Báo cáo nội dung vi phạm từ chatbot và bình luận tin tức.
+        Hệ thống tự phát hiện ngôn từ thô tục và gửi tới ban tư vấn xử lý.
+    </p>
+</div>
+
+{# Filter tabs #}
+<div class="filter-tabs">
+    <a href="?status=pending" class="filter-tab {% if status_filter == 'pending' %}active{% endif %}">
+        Chờ xử lý <span class="count">{{ counts.pending }}</span>
+    </a>
+    <a href="?status=" class="filter-tab {% if status_filter == '' %}active{% endif %}">
+        Tất cả <span class="count">{{ counts.all }}</span>
+    </a>
+    <a href="?status=approved" class="filter-tab {% if status_filter == 'approved' %}active{% endif %}">
+        Đã duyệt
+    </a>
+    <a href="?status=hidden" class="filter-tab {% if status_filter == 'hidden' %}active{% endif %}">
+        Đã ẩn
+    </a>
+    <a href="?status=warned" class="filter-tab {% if status_filter == 'warned' %}active{% endif %}">
+        Đã cảnh báo
+    </a>
+</div>
+
+{# Source filter (dropdown) #}
+<div class="mb-3 d-flex gap-2 align-items-center">
+    <small class="muted">Lọc theo nguồn:</small>
+    <a href="?status={{ status_filter }}" class="btn btn-sm {% if not source_filter %}btn-primary{% else %}btn-light{% endif %}">Tất cả</a>
+    <a href="?status={{ status_filter }}&source=chat" class="btn btn-sm {% if source_filter == 'chat' %}btn-primary{% else %}btn-light{% endif %}">Chatbot</a>
+    <a href="?status={{ status_filter }}&source=comment" class="btn btn-sm {% if source_filter == 'comment' %}btn-primary{% else %}btn-light{% endif %}">Bình luận tin tức</a>
+</div>
+
+{% if reports %}
+<div class="reports-list">
+    {% for r in reports %}
+    <div class="mod-card status-{{ r.status }}">
+        <div class="mod-meta">
+            <span class="badge-source {{ r.source }}">
+                {% if r.source == 'chat' %}<i class="fas fa-robot"></i>{% else %}<i class="far fa-comment"></i>{% endif %}
+                {{ r.get_source_display }}
+            </span>
+            <span class="badge-status {{ r.status }}">{{ r.get_status_display }}</span>
+
+            {% if r.content_user %}
+                <span>👤 <strong>{{ r.content_user.get_full_name|default:r.content_user.username }}</strong></span>
+            {% endif %}
+            <span><i class="far fa-clock"></i> {{ r.created_at|date:"d/m/Y H:i" }}</span>
+
+            {% if r.source == 'comment' and r.comment %}
+                <span>📰 Tin: <a href="{% url 'news:detail' r.comment.news.slug %}" target="_blank">{{ r.comment.news.title|truncatechars:50 }}</a></span>
+            {% endif %}
+            {% if r.source == 'chat' and r.chat_message %}
+                <span>💬 Phiên #{{ r.chat_message.session_id }}</span>
+            {% endif %}
+        </div>
+
+        <div class="mod-content">{{ r.snapshot_text }}</div>
+
+        {% if r.matched_words %}
+        <div class="mod-tags">
+            <small class="muted me-2">Từ vi phạm phát hiện:</small>
+            {% for w in r.matched_words|cut:" "|stringformat:'s'|slice:":300"|safe|cut:"," %}
+            {% endfor %}
+            {# Render từ matched #}
+            {% for word in r.matched_words|cut:" " %}{% endfor %}
+            {# Simpler: just split by comma using template hack #}
+            <span class="mod-tag">{{ r.matched_words }}</span>
+        </div>
+        {% endif %}
+
+        {% if r.status == 'pending' %}
+        <form method="post" action="{% url 'moderation_action' r.id %}" class="mod-actions">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="approved">
+            <button type="submit" class="btn btn-sm btn-success">
+                <i class="fas fa-check"></i> Duyệt (không vi phạm)
+            </button>
+        </form>
+        <form method="post" action="{% url 'moderation_action' r.id %}" class="mod-actions" style="display:inline;">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="hidden">
+            <button type="submit" class="btn btn-sm btn-danger">
+                <i class="fas fa-eye-slash"></i> Ẩn nội dung
+            </button>
+        </form>
+        <form method="post" action="{% url 'moderation_action' r.id %}" class="mod-actions" style="display:inline;">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="warned">
+            <button type="submit" class="btn btn-sm btn-warning">
+                <i class="fas fa-exclamation-triangle"></i> Đánh dấu đã cảnh báo
+            </button>
+        </form>
+        {% else %}
+        <div class="mt-2">
+            <small class="muted">
+                Đã xử lý bởi
+                {% if r.reviewed_by %}<strong>{{ r.reviewed_by.get_full_name|default:r.reviewed_by.username }}</strong>{% else %}—{% endif %}
+                {% if r.reviewed_at %}lúc {{ r.reviewed_at|date:"d/m/Y H:i" }}{% endif %}
+                {% if r.admin_note %}<br>Ghi chú: {{ r.admin_note }}{% endif %}
+            </small>
+        </div>
+        {% endif %}
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div class="empty-state">
+    <i class="fas fa-shield-alt d-block"></i>
+    <h5>Không có báo cáo nào</h5>
+    <p>Hiện chưa có nội dung vi phạm nào ở trạng thái <strong>{{ status_filter|default:"tất cả" }}</strong>.</p>
+</div>
+{% endif %}
+{% endblock %}

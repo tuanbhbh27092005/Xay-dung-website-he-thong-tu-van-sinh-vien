@@ -1,0 +1,325 @@
+{% extends 'admin_panel/base_admin.html' %}
+{% load static %}
+
+{% block title %}Sổ tay ban tư vấn · HCMUTE Quản trị{% endblock %}
+
+{% block crumb_section %}Người dùng{% endblock %}
+{% block crumb_page %}Sổ tay ban tư vấn{% endblock %}
+
+{% block extra_css %}
+<style>
+    .handbook-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 20px;
+        flex-wrap: wrap;
+        gap: 14px;
+    }
+    .handbook-head h2 { margin: 0; }
+    .handbook-filter {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 13px;
+    }
+    .handbook-filter select {
+        padding: 8px 14px;
+        border: 1.5px solid var(--border-2, #d2d6de);
+        border-radius: 8px;
+        background: #fff;
+        font-size: 13px;
+        min-width: 240px;
+        cursor: pointer;
+    }
+    .handbook-filter select:focus {
+        outline: none;
+        border-color: var(--brand-blue, #0B3F8C);
+        box-shadow: 0 0 0 3px var(--brand-blue-soft, #E8EEF7);
+    }
+
+    .dept-group {
+        margin-bottom: 32px;
+    }
+    .dept-group-head {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 14px;
+        padding-bottom: 10px;
+        border-bottom: 2px solid var(--brand-blue, #0B3F8C);
+    }
+    .dept-group-head .dept-icon {
+        width: 38px; height: 38px;
+        border-radius: 10px;
+        background: var(--brand-blue-soft, #E8EEF7);
+        color: var(--brand-blue, #0B3F8C);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 16px;
+    }
+    .dept-group-head h4 {
+        margin: 0;
+        color: var(--brand-blue, #0B3F8C);
+        font-size: 1.1rem;
+    }
+    .dept-group-head .dept-count {
+        background: var(--bg-soft, #F8F9FB);
+        color: var(--text-3, #7A8194);
+        padding: 3px 10px;
+        border-radius: 999px;
+        font-size: 12px;
+        font-weight: 600;
+        font-family: var(--font-mono, monospace);
+    }
+
+    .advisor-table {
+        background: #fff;
+        border: 1px solid var(--border, #e5e7ec);
+        border-radius: 12px;
+        overflow: hidden;
+    }
+    .advisor-table table {
+        margin: 0;
+        width: 100%;
+    }
+    .advisor-table thead {
+        background: var(--bg-soft, #F8F9FB);
+    }
+    .advisor-table thead th {
+        font-size: 12px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: var(--text-3, #7A8194);
+        padding: 12px 16px;
+        border: none;
+    }
+    .advisor-table tbody td {
+        padding: 14px 16px;
+        vertical-align: middle;
+        border-top: 1px solid var(--border, #e5e7ec);
+        font-size: 14px;
+    }
+    .advisor-table tbody tr:hover { background: #fafbfd; }
+
+    .col-stt { width: 60px; text-align: center; font-family: var(--font-mono, monospace); color: var(--text-3, #7A8194); font-weight: 700; }
+    .col-avatar { width: 80px; }
+    .col-actions { width: 110px; text-align: end; }
+
+    .adv-avatar {
+        width: 52px; height: 52px;
+        border-radius: 50%;
+        object-fit: cover;
+        border: 2px solid var(--border, #e5e7ec);
+        display: block;
+    }
+    .adv-avatar-initial {
+        width: 52px; height: 52px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, var(--brand-blue, #0B3F8C), var(--brand-red, #DA251D));
+        color: #fff;
+        font-weight: 700;
+        font-size: 20px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .adv-name {
+        font-weight: 700;
+        color: var(--text, #1A1F2E);
+        font-size: 14.5px;
+        line-height: 1.4;
+        margin-bottom: 2px;
+    }
+    .adv-name .title-prefix {
+        color: var(--brand-red, #DA251D);
+        font-weight: 700;
+        margin-right: 4px;
+    }
+    .adv-position {
+        font-size: 12px;
+        color: var(--text-3, #7A8194);
+    }
+    .adv-role-badge {
+        display: inline-block;
+        font-size: 10.5px;
+        padding: 2px 8px;
+        border-radius: 999px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        margin-top: 4px;
+    }
+    .adv-role-badge.admin {
+        background: var(--brand-red-soft, #FDECEB);
+        color: var(--brand-red, #DA251D);
+    }
+    .adv-role-badge.advisor {
+        background: var(--brand-blue-soft, #E8EEF7);
+        color: var(--brand-blue, #0B3F8C);
+    }
+
+    .contact-line {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        color: var(--text-2, #4A5165);
+        font-size: 13px;
+    }
+    .contact-line i { color: var(--text-3, #7A8194); font-size: 12px; }
+    .contact-line a { color: var(--brand-blue, #0B3F8C); text-decoration: none; }
+    .contact-line a:hover { text-decoration: underline; }
+    .contact-empty { color: var(--text-mute, #A8AEBC); font-style: italic; font-size: 12px; }
+
+    .empty-handbook {
+        text-align: center;
+        padding: 70px 20px;
+        background: #fff;
+        border: 1px dashed var(--border-2, #d2d6de);
+        border-radius: 12px;
+    }
+    .empty-handbook i {
+        font-size: 48px;
+        color: var(--text-mute, #A8AEBC);
+        margin-bottom: 16px;
+    }
+
+    @media (max-width: 768px) {
+        .col-avatar, .col-stt { width: auto; }
+        .advisor-table thead { display: none; }
+        .advisor-table tbody td { display: block; padding: 8px 14px; border: none; }
+        .advisor-table tbody tr {
+            display: block;
+            border-bottom: 1px solid var(--border, #e5e7ec);
+            padding: 12px 0;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<div class="handbook-head">
+    <div>
+        <span class="eyebrow">Người dùng</span>
+        <h2 class="mt-2"><i class="far fa-address-book me-2 text-blue"></i>Sổ tay ban tư vấn</h2>
+        <p class="muted mb-0" style="font-size: 13px;">
+            Danh bạ {{ total }} tư vấn viên & quản trị viên — nhóm theo khoa/đơn vị.
+        </p>
+    </div>
+
+    {# Filter theo khoa #}
+    <form method="get" class="handbook-filter">
+        <label for="dept-filter" class="muted small">Lọc theo khoa:</label>
+        <select name="dept" id="dept-filter" onchange="this.form.submit()">
+            <option value="">— Tất cả khoa/đơn vị —</option>
+            {% for d in departments %}
+            <option value="{{ d.id }}" {% if selected_dept and selected_dept.id == d.id %}selected{% endif %}>
+                {{ d.name }}
+            </option>
+            {% endfor %}
+        </select>
+    </form>
+</div>
+
+{% if grouped %}
+    {% for group in grouped %}
+    <div class="dept-group">
+        <div class="dept-group-head">
+            <span class="dept-icon"><i class="far fa-building"></i></span>
+            <h4>
+                {% if group.department %}{{ group.department.name }}
+                {% else %}<span class="muted">Chưa gắn khoa/đơn vị</span>
+                {% endif %}
+            </h4>
+            <span class="dept-count">{{ group.advisors|length }} người</span>
+        </div>
+
+        <div class="advisor-table">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th class="col-stt">STT</th>
+                        <th class="col-avatar">Ảnh</th>
+                        <th>Họ và tên</th>
+                        <th>Số điện thoại</th>
+                        <th>Email</th>
+                        <th class="col-actions">Thao tác</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for adv in group.advisors %}
+                    <tr>
+                        <td class="col-stt">{{ forloop.counter }}</td>
+                        <td class="col-avatar">
+                            {% if adv.avatar %}
+                            <img src="{{ adv.avatar.url }}" alt="avatar" class="adv-avatar">
+                            {% else %}
+                            <span class="adv-avatar-initial">
+                                {{ adv.user.first_name.0|default:adv.user.username.0|default:'?'|upper }}
+                            </span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <div class="adv-name">
+                                {% if adv.academic_title %}<span class="title-prefix">{{ adv.academic_title }}.</span>{% endif %}
+                                {{ adv.user.get_full_name|default:adv.user.username }}
+                            </div>
+                            {% if adv.position %}
+                            <div class="adv-position">{{ adv.position }}</div>
+                            {% endif %}
+                            <span class="adv-role-badge {{ adv.role }}">
+                                {{ adv.get_role_display }}
+                            </span>
+                        </td>
+                        <td>
+                            {% if adv.user.phone_number %}
+                            <a class="contact-line" href="tel:{{ adv.user.phone_number }}" onclick="event.preventDefault(); navigator.clipboard.writeText('{{ adv.user.phone_number }}'); alert('Đã copy số điện thoại: {{ adv.user.phone_number }}');" title="Nhấn để copy số điện thoại">
+                                <i class="fas fa-phone"></i> {{ adv.user.phone_number }}
+                            </a>
+                            {% else %}
+                            <span class="contact-empty">—</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if adv.user.email %}
+                            <a class="contact-line" href="mailto:{{ adv.user.email }}" onclick="event.preventDefault(); navigator.clipboard.writeText('{{ adv.user.email }}'); alert('Đã copy email: {{ adv.user.email }}');" title="Nhấn để copy email">
+                                <i class="far fa-envelope"></i> {{ adv.user.email }}
+                            </a>
+                            {% else %}
+                            <span class="contact-empty">—</span>
+                            {% endif %}
+                        </td>
+                        <td class="col-actions">
+                            {% if user.advisorprofile.role == 'admin' %}
+                            <a href="{% url 'edit_advisor' adv.id %}" class="btn btn-sm btn-light" title="Chỉnh sửa">
+                                <i class="fas fa-pen"></i>
+                            </a>
+                            {% else %}
+                            <span class="muted small">—</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% endfor %}
+{% else %}
+<div class="empty-handbook">
+    <i class="far fa-address-book d-block"></i>
+    <h5>Chưa có tư vấn viên nào{% if selected_dept %} trong khoa "{{ selected_dept.name }}"{% endif %}.</h5>
+    {% if user.advisorprofile.role == 'admin' %}
+    <p class="muted mb-3">Bạn có thể thêm tư vấn viên từ trang quản lý.</p>
+    <a href="{% url 'manage_advisors' %}" class="btn btn-primary">
+        <i class="fas fa-plus"></i> Thêm tư vấn viên
+    </a>
+    {% endif %}
+</div>
+{% endif %}
+
+{% endblock %}

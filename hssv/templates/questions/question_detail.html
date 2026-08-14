@@ -1,0 +1,156 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ question.title }} - Tư Vấn Sinh Viên{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+
+<div class="mb-3">
+    <a href="{% url 'home' %}" class="btn btn-outline-secondary btn-sm">
+        <i class="fas fa-arrow-left me-1"></i> Quay lại trang chủ
+    </a>
+</div>
+
+<div class="card mb-4">
+    <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+        <h4 class="mb-0">{{ question.title }}</h4>
+        {% if question.status == 'pending' %}
+        <span class="badge bg-warning">Chưa trả lời</span>
+        {% else %}
+        <span class="badge bg-success">Đã trả lời</span>
+        {% endif %}
+    </div>
+    <div class="card-body">
+        <div class="mb-3">
+            {{ question.content|linebreaks }}
+        </div>
+        <div class="d-flex justify-content-between flex-wrap gap-2">
+            <div>
+                {% if question.category %}
+                <span class="badge bg-info me-2">{{ question.category.name }}</span>
+                {% endif %}
+                {% if question.major %}
+                <span class="badge bg-secondary me-2">{{ question.major.name }}</span>
+                {% endif %}
+                {# Counter lượt xem để user thấy độ phổ biến của câu hỏi #}
+                <span class="badge bg-light text-dark border">
+                    <i class="far fa-eye me-1"></i> {{ question.views_count }} lượt xem
+                </span>
+            </div>
+            <div class="text-muted">
+                <small>
+                    <i class="fas fa-user me-1"></i> {{ question.user.get_full_name|default:question.user.username }}
+                </small>
+                <small class="ms-2">
+                    <i class="fas fa-clock me-1"></i> {{ question.created_at|date:"d/m/Y H:i" }}
+                </small>
+            </div>
+        </div>
+    </div>
+</div>
+
+{# ─── Trang công khai: KHÔNG hiển thị alert/CTA trả lời. ─── #}
+{# Tư vấn viên/admin trả lời từ trang quản lý câu hỏi (admin dashboard), #}
+{# không cần shortcut ở public — tránh nhiễu UI khi click nút mắt từ admin panel. #}
+
+<div class="card mb-4">
+    <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">Câu trả lời ({{ answers.count }})</h5>
+    </div>
+    <div class="card-body p-0">
+        {% if answers %}
+            <div class="list-group list-group-flush">
+                {% for answer in answers %}
+                <div class="list-group-item {% if answer.user.advisorprofile %}bg-light{% endif %}">
+                    <div class="d-flex justify-content-between align-items-center mb-2 flex-wrap gap-2">
+                        <div>
+                            {# ─── Hiển thị tên kèm học hàm (ThS./TS./PGS.TS.) ─── #}
+                            {% if answer.user.advisorprofile %}
+                                <strong class="text-primary">
+                                    {% if answer.user.advisorprofile.academic_title %}
+                                        {{ answer.user.advisorprofile.academic_title }}.
+                                    {% endif %}
+                                    {{ answer.user.get_full_name|default:answer.user.username }}
+                                </strong>
+                                <span class="badge bg-primary ms-1">
+                                    {{ answer.user.advisorprofile.get_role_display }}
+                                </span>
+                                {% if answer.user.advisorprofile.position %}
+                                <div class="muted small mt-1">
+                                    <i class="fas fa-id-badge me-1"></i>
+                                    {{ answer.user.advisorprofile.position }}
+                                    {% if answer.user.advisorprofile.department %}
+                                        — {{ answer.user.advisorprofile.department.name }}
+                                    {% endif %}
+                                </div>
+                                {% elif answer.user.advisorprofile.department %}
+                                <span class="badge bg-info ms-1">{{ answer.user.advisorprofile.department.name }}</span>
+                                {% endif %}
+                            {% else %}
+                                <strong>{{ answer.user.get_full_name|default:answer.user.username }}</strong>
+                            {% endif %}
+                        </div>
+                        <small class="text-muted">
+                            <i class="fas fa-clock me-1"></i> {{ answer.created_at|date:"d/m/Y H:i" }}
+                        </small>
+                    </div>
+                    <div class="mb-0">
+                        {{ answer.content|linebreaks }}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="p-4 text-center">
+                <div class="alert alert-info mb-0">
+                    Chưa có câu trả lời nào.
+                    {% if not user.is_authenticated %}
+                    <br><small>Đăng nhập để theo dõi khi tư vấn viên phản hồi.</small>
+                    {% endif %}
+                </div>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+{# ─── KHỐI FORM TRẢ LỜI ĐÃ BỊ XÓA ─── #}
+{# Theo yêu cầu: "Trả lời câu hỏi sinh viên chỉ trả lời được ở mục quản lý câu hỏi #}
+{# dashboard của ban tư vấn và admin". #}
+{# Form đã được di chuyển sang admin_panel/answer_question.html. #}
+
+<div class="mt-4">
+    <h5 class="mb-3">Câu hỏi liên quan</h5>
+    <div class="row">
+        {% for related_question in related_questions %}
+        <div class="col-md-6 mb-3">
+            <div class="card h-100">
+                <div class="card-body">
+                    <h6 class="card-title">
+                        <a href="{% url 'question_detail' related_question.id %}" class="text-decoration-none">
+                            {{ related_question.title }}
+                        </a>
+                        {% if related_question.status == 'pending' %}
+                        <span class="badge bg-warning ms-1">Chưa trả lời</span>
+                        {% else %}
+                        <span class="badge bg-success ms-1">Đã trả lời</span>
+                        {% endif %}
+                    </h6>
+                    <p class="card-text small text-muted">{{ related_question.content|truncatechars:100 }}</p>
+                    <div class="small text-muted">
+                        <i class="far fa-eye me-1"></i> {{ related_question.views_count }} lượt xem
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <div class="col-12">
+            <div class="alert alert-info">
+                Không có câu hỏi liên quan.
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+</div>
+{% endblock %}

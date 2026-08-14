@@ -1,0 +1,186 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load widget_tweaks %}
+
+{% block title %}Đăng nhập · HCMUTE Tư Vấn Sinh Viên{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* ─── Auth page background: subtle gradient để hero nổi bật ─── */
+    .auth-page {
+        min-height: calc(100vh - 200px);
+        background:
+            radial-gradient(circle at 20% 0%, rgba(11,63,140,0.08) 0%, transparent 50%),
+            radial-gradient(circle at 80% 100%, rgba(218,37,29,0.06) 0%, transparent 50%),
+            var(--bg-soft);
+        padding: 60px 16px;
+        display: flex;
+        align-items: flex-start;
+        justify-content: center;
+    }
+
+    /* ─── Card chính giữa ─── */
+    .auth-card {
+        width: 100%;
+        max-width: 460px;
+        background: var(--bg);
+        border: 1px solid var(--border);
+        border-radius: var(--r-lg);
+        box-shadow: 0 8px 24px rgba(0,0,0,0.06), 0 2px 6px rgba(0,0,0,0.04);
+        overflow: hidden;
+    }
+
+    .auth-card .auth-head {
+        background: linear-gradient(135deg, var(--brand-blue) 0%, var(--brand-blue-deep) 100%);
+        padding: 36px 36px 30px;
+        color: #fff;
+        text-align: center;
+        position: relative;
+        overflow: hidden;
+    }
+    .auth-card .auth-head::before {
+        content: '';
+        position: absolute;
+        top: -60px; right: -60px;
+        width: 180px; height: 180px;
+        background: radial-gradient(circle, rgba(218,37,29,0.35) 0%, transparent 70%);
+        z-index: 0;
+        pointer-events: none;
+    }
+    .auth-card .auth-head img {
+        height: 56px;
+        margin-bottom: 14px;
+        position: relative; z-index: 1;
+    }
+    .auth-card .auth-head h2 {
+        color: #fff;
+        font-size: 1.5rem;
+        font-weight: 700;
+        line-height: 1.45;
+        letter-spacing: 0;
+        margin: 0 0 6px;
+        position: relative;
+        z-index: 1;
+        text-rendering: optimizeLegibility;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+    }
+    .auth-card .auth-head p {
+        color: rgba(255,255,255,0.85);
+        font-size: 13px;
+        line-height: 1.5;
+        margin: 0;
+        position: relative;
+        z-index: 1;
+    }
+
+    .auth-card .auth-body {
+        padding: 32px 36px 28px;
+    }
+    .auth-card .auth-foot {
+        background: var(--bg-soft);
+        padding: 16px 36px;
+        text-align: center;
+        font-size: 14px;
+        border-top: 1px solid var(--border);
+    }
+    .auth-card .auth-foot a {
+        color: var(--brand-red);
+        font-weight: 700;
+        text-decoration: none;
+    }
+    .auth-card .auth-foot a:hover { text-decoration: underline; }
+
+    @media (max-width: 480px) {
+        .auth-card .auth-head { padding: 28px 24px 22px; }
+        .auth-card .auth-body { padding: 24px; }
+        .auth-card .auth-foot { padding: 14px 24px; }
+    }
+
+    @keyframes shake {
+        0%, 100% { transform: translateX(0); }
+        15%       { transform: translateX(-6px); }
+        30%       { transform: translateX(6px); }
+        45%       { transform: translateX(-4px); }
+        60%       { transform: translateX(4px); }
+        75%       { transform: translateX(-2px); }
+        90%       { transform: translateX(2px); }
+    }
+    .shake { animation: shake 0.55s ease; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="auth-page">
+    <div class="auth-card">
+
+        {# ─── Header gradient ─── #}
+        <div class="auth-head">
+            <img src="{% static 'img/logo-hcmute.png' %}" alt="HCMUTE"
+                 onerror="this.style.display='none'">
+            <h2>Đăng nhập tài khoản</h2>
+            <p>HCMUTE · Tư vấn Sinh viên</p>
+        </div>
+
+        {# ─── Body chứa form ─── #}
+        <div class="auth-body">
+
+            {# Alert thân thiện khi user bị redirect từ trang yêu cầu login (vd. /chatbot/) #}
+            {% if next %}
+            <div class="alert alert-info py-2 mb-4" style="font-size: 13px;">
+                <i class="fas fa-info-circle me-1"></i>
+                Vui lòng đăng nhập để tiếp tục sử dụng tính năng bạn đang truy cập.
+            </div>
+            {% endif %}
+
+            <form method="post">
+                {% csrf_token %}
+                {# Giữ ?next= để sau khi login thành công auto-redirect về đúng trang #}
+                <input type="hidden" name="next" value="{{ next }}">
+
+                {# ─── Lỗi sai tài khoản / mật khẩu (non-field errors) ─── #}
+                {% if form.non_field_errors %}
+                <div class="alert alert-danger d-flex align-items-start gap-2 mb-4 shake" role="alert"
+                     style="font-size: 14px; border-left: 4px solid #da251d; border-radius: var(--r);">
+                    <i class="fas fa-exclamation-circle mt-1 flex-shrink-0" style="color:#da251d;"></i>
+                    <div>
+                        <strong>Đăng nhập thất bại!</strong><br>
+                        <span style="color: var(--text-2);">Tên tài khoản hoặc mật khẩu không đúng. Vui lòng kiểm tra lại.</span>
+                    </div>
+                </div>
+                {% endif %}
+
+                {% for field in form %}
+                <div class="mb-3">
+                    <label for="{{ field.id_for_label }}" class="form-label">
+                        {{ field.label }}
+                    </label>
+                    {% if field.errors %}
+                        <div class="alert alert-danger py-2 mb-2" style="font-size: 13px;">
+                            {{ field.errors|join:" · " }}
+                        </div>
+                    {% endif %}
+                    {{ field|add_class:"form-control form-control-lg" }}
+                    {% if field.help_text %}
+                    <div class="form-text mt-1">{{ field.help_text }}</div>
+                    {% endif %}
+                </div>
+                {% endfor %}
+
+                <button type="submit" class="btn btn-primary w-100 btn-lg mt-2">
+                    Đăng nhập <i class="fas fa-arrow-right ms-1"></i>
+                </button>
+            </form>
+        </div>
+
+        {# ─── Footer link sang đăng ký ─── #}
+        <div class="auth-foot">
+            <span class="muted">Chưa có tài khoản?</span>
+            <a href="{% url 'register' %}{% if next %}?next={{ next }}{% endif %}">
+                Đăng ký ngay <i class="fas fa-arrow-right ms-1"></i>
+            </a>
+        </div>
+
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,280 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Tin tức · HCMUTE Tư vấn Sinh viên{% endblock %}
+
+{% block extra_css %}
+<style>
+    .news-card {
+        background: var(--bg);
+        border: 1px solid var(--border);
+        border-radius: var(--r-lg);
+        overflow: hidden;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        transition: all .2s;
+        box-shadow: var(--shadow-sm);
+    }
+    .news-card:hover {
+        border-color: var(--brand-blue);
+        box-shadow: var(--shadow);
+        transform: translateY(-2px);
+    }
+    .news-card .news-thumb {
+        aspect-ratio: 16 / 9;
+        background: linear-gradient(135deg, var(--brand-blue-soft), var(--brand-red-soft));
+        background-size: cover;
+        background-position: center;
+        position: relative;
+    }
+    .news-card .news-cat {
+        position: absolute;
+        top: 12px; left: 12px;
+        background: var(--brand-red);
+        color: #fff;
+        font-size: 11px;
+        font-weight: 700;
+        padding: 4px 10px;
+        border-radius: 999px;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+    }
+    .news-card .news-body {
+        padding: 18px;
+        display: flex;
+        flex-direction: column;
+        flex: 1;
+    }
+    .news-card .news-title {
+        font-weight: 700;
+        font-size: 1.05rem;
+        line-height: 1.4;
+        color: var(--text);
+        margin-bottom: 8px;
+        text-decoration: none;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
+    .news-card:hover .news-title { color: var(--brand-blue); }
+    .news-card .news-summary {
+        color: var(--text-3);
+        font-size: 13px;
+        line-height: 1.55;
+        margin-bottom: 12px;
+        display: -webkit-box;
+        -webkit-line-clamp: 3;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
+    .news-card .news-meta {
+        margin-top: auto;
+        font-size: 11.5px;
+        color: var(--text-3);
+        padding-top: 10px;
+        border-top: 1px solid var(--border);
+        display: flex;
+        gap: 12px;
+        align-items: center;
+    }
+
+    /* Category tabs */
+    .cat-tabs {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-bottom: 30px;
+    }
+    .cat-tab {
+        padding: 8px 18px;
+        border: 1px solid var(--border-2);
+        background: var(--bg);
+        color: var(--text-2);
+        font-size: 13px;
+        font-weight: 600;
+        border-radius: 999px;
+        text-decoration: none;
+        transition: all .15s;
+    }
+    .cat-tab:hover {
+        border-color: var(--brand-red);
+        color: var(--brand-red);
+        background: var(--brand-red-soft);
+        text-decoration: none;
+    }
+    .cat-tab.active {
+        background: var(--brand-red);
+        border-color: var(--brand-red);
+        color: #fff;
+    }
+
+    /* Featured */
+    .featured {
+        background: linear-gradient(135deg, var(--brand-blue-soft) 0%, var(--bg) 100%);
+        border: 1px solid var(--border);
+        border-radius: var(--r-lg);
+        padding: 0;
+        overflow: hidden;
+        margin-bottom: 40px;
+    }
+    .featured-inner {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 0;
+    }
+    .featured-thumb {
+        aspect-ratio: 16 / 11;
+        background: linear-gradient(135deg, var(--brand-blue) 0%, var(--brand-blue-deep) 100%);
+        background-size: cover;
+        background-position: center;
+    }
+    .featured-body { padding: 32px; display: flex; flex-direction: column; justify-content: center; }
+    .featured-title {
+        font-size: 1.75rem;
+        font-weight: 800;
+        line-height: 1.2;
+        margin-bottom: 16px;
+        color: var(--text);
+        text-decoration: none;
+    }
+    .featured-title:hover { color: var(--brand-blue); }
+    @media (max-width: 768px) {
+        .featured-inner { grid-template-columns: 1fr; }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+
+{# ─── PAGE HEADER ─── #}
+<section class="section-sm" style="padding-bottom: 0;">
+    <div class="container">
+        <div class="text-center mb-5">
+            <span class="eyebrow">HCMUTE Tin tức</span>
+            <h1 class="mt-2">Tin tức &amp; Bài viết</h1>
+            <p class="lead" style="max-width: 600px; margin: 12px auto 0;">
+                Cập nhật thông tin tuyển sinh, sự kiện, hoạt động khoa và các bài viết hữu ích cho sinh viên.
+            </p>
+        </div>
+    </div>
+</section>
+
+<section class="section" style="padding-top: 32px;">
+    <div class="container">
+
+        {# ─── FEATURED (chỉ ở page 1, không filter) ─── #}
+        {% if featured and not selected_cat and not keyword and page.number == 1 %}
+        {% with feat_src=featured.thumbnail_src %}
+        <div class="featured">
+            <div class="featured-inner">
+                <div class="featured-thumb"
+                     {% if feat_src %}style="background-image: url('{{ feat_src }}');"{% endif %}>
+                </div>
+                <div class="featured-body">
+                    <span class="eyebrow eyebrow-blue">{{ featured.get_category_display }}</span>
+                    <a href="{{ featured.get_absolute_url }}" class="featured-title mt-2">
+                        {{ featured.title }}
+                    </a>
+                    <p class="muted mb-3" style="font-size: 14px; line-height: 1.6;">
+                        {{ featured.summary|truncatechars:200 }}
+                    </p>
+                    <div class="d-flex gap-3 align-items-center" style="font-size: 12px; color: var(--text-3);">
+                        <span><i class="far fa-calendar"></i> {{ featured.created_at|date:"d/m/Y" }}</span>
+                        <span><i class="far fa-eye"></i> {{ featured.views_count }} lượt xem</span>
+                        <span><i class="far fa-comment"></i> {{ featured.comments.count }} bình luận</span>
+                    </div>
+                    <div class="mt-4">
+                        <a href="{{ featured.get_absolute_url }}" class="btn btn-primary">
+                            Đọc tiếp <i class="fas fa-arrow-right"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endwith %}
+        {% endif %}
+
+        {# ─── CATEGORY TABS ─── #}
+        <div class="cat-tabs">
+            <a href="{% url 'news:list' %}" class="cat-tab {% if not selected_cat %}active{% endif %}">
+                Tất cả
+            </a>
+            {% for code, label in categories %}
+            <a href="?cat={{ code }}" class="cat-tab {% if selected_cat == code %}active{% endif %}">
+                {{ label }}
+            </a>
+            {% endfor %}
+        </div>
+
+        {# ─── SEARCH FORM ─── #}
+        <form method="get" class="mb-4">
+            {% if selected_cat %}<input type="hidden" name="cat" value="{{ selected_cat }}">{% endif %}
+            <div class="d-flex gap-2" style="max-width: 500px;">
+                <input type="text" name="q" value="{{ keyword }}" class="form-control"
+                       placeholder="Tìm kiếm tin tức theo từ khoá...">
+                <button type="submit" class="btn btn-blue"><i class="fas fa-search"></i></button>
+            </div>
+        </form>
+
+        {# ─── NEWS GRID ─── #}
+        {% if news_list %}
+        <div class="row g-4">
+            {% for news in news_list %}
+            {% with n_src=news.thumbnail_src %}
+            <div class="col-md-6 col-lg-4">
+                <a href="{{ news.get_absolute_url }}" class="news-card text-decoration-none d-block">
+                    <div class="news-thumb"
+                         {% if n_src %}style="background-image: url('{{ n_src }}');"{% endif %}>
+                        <span class="news-cat">{{ news.get_category_display }}</span>
+                    </div>
+                    <div class="news-body">
+                        <div class="news-title">{{ news.title }}</div>
+                        <div class="news-summary">{{ news.summary|default:news.content|striptags|truncatechars:160 }}</div>
+                        <div class="news-meta">
+                            <span><i class="far fa-calendar"></i> {{ news.created_at|date:"d/m/Y" }}</span>
+                            <span><i class="far fa-eye"></i> {{ news.views_count }}</span>
+                            <span><i class="far fa-comment"></i> {{ news.comments.count }}</span>
+                        </div>
+                    </div>
+                </a>
+            </div>
+            {% endwith %}
+            {% endfor %}
+        </div>
+
+        {# Pagination #}
+        {% if page.has_other_pages %}
+        <nav class="d-flex justify-content-center mt-5">
+            <div class="d-flex gap-2 align-items-center">
+                {% if page.has_previous %}
+                <a class="btn btn-light btn-sm" href="?{% if selected_cat %}cat={{ selected_cat }}&{% endif %}{% if keyword %}q={{ keyword }}&{% endif %}page={{ page.previous_page_number }}">
+                    <i class="fas fa-chevron-left"></i>
+                </a>
+                {% endif %}
+                <span class="muted px-3">Trang {{ page.number }} / {{ page.paginator.num_pages }}</span>
+                {% if page.has_next %}
+                <a class="btn btn-light btn-sm" href="?{% if selected_cat %}cat={{ selected_cat }}&{% endif %}{% if keyword %}q={{ keyword }}&{% endif %}page={{ page.next_page_number }}">
+                    <i class="fas fa-chevron-right"></i>
+                </a>
+                {% endif %}
+            </div>
+        </nav>
+        {% endif %}
+
+        {% else %}
+        <div class="alert alert-info text-center" style="padding: 40px;">
+            <i class="far fa-newspaper" style="font-size: 2rem; color: var(--text-mute); margin-bottom: 12px;"></i>
+            <h5 style="margin: 0;">Chưa có tin tức nào trong mục này.</h5>
+            {% if selected_cat or keyword %}
+            <p class="muted mb-3 mt-2">Thử bỏ filter để xem tất cả.</p>
+            <a href="{% url 'news:list' %}" class="btn btn-blue btn-sm">Xem tất cả tin tức</a>
+            {% endif %}
+        </div>
+        {% endif %}
+
+    </div>
+</section>
+
+{% endblock %}

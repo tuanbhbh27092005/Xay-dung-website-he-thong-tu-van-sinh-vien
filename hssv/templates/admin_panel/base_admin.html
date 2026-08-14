@@ -1,0 +1,149 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Quản trị · HCMUTE Tư Vấn{% endblock %}</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="{% static 'css/site.css' %}">
+
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+
+<div class="admin-shell">
+
+    <aside class="admin-side">
+
+        <div class="side-brand">
+            <a href="{% url 'admin_dashboard' %}" class="brand">
+                <img src="{% static 'img/logo-hcmute.png' %}" alt="HCMUTE"
+                     style="height: 44px;"
+                     onerror="this.style.display='none'">
+                <div class="brand-text">
+                    <div class="brand-name">HCMUTE</div>
+                    <div class="brand-sub">Admin Panel</div>
+                </div>
+            </a>
+        </div>
+
+        <div class="side-section">Tổng quan</div>
+        <a href="{% url 'admin_dashboard' %}"
+           class="side-link {% if request.resolver_match.url_name == 'admin_dashboard' %}active{% endif %}">
+            <i class="fas fa-th-large"></i> Bảng điều khiển
+        </a>
+        <a href="{% url 'manage_questions' %}"
+           class="side-link {% if request.resolver_match.url_name == 'manage_questions' %}active{% endif %}">
+            <i class="far fa-comment-dots"></i> Quản lý câu hỏi
+        </a>
+
+        {# ─── PHASE C: NỘI DUNG (NEWS) - dành cho cả admin và advisor ─── #}
+        <div class="side-section">Nội dung</div>
+        <a href="{% url 'news:manage_list' %}"
+           class="side-link {% if request.resolver_match.namespace == 'news' and 'manage' in request.resolver_match.url_name %}active{% endif %}">
+            <i class="far fa-newspaper"></i> Tin tức &amp; Bài viết
+        </a>
+        <a href="{% url 'moderation_queue' %}"
+           class="side-link {% if 'moderation' in request.resolver_match.url_name %}active{% endif %}">
+            <i class="fas fa-shield-alt"></i> Kiểm duyệt nội dung
+        </a>
+
+        {% if user.advisorprofile.role == 'admin' %}
+        <div class="side-section">Thống kê</div>
+        <a href="{% url 'statistics_dashboard' %}"
+           class="side-link {% if request.resolver_match.url_name == 'statistics_dashboard' %}active{% endif %}">
+            <i class="far fa-chart-bar"></i> Báo cáo &amp; thống kê
+        </a>
+
+        <div class="side-section">Danh mục</div>
+        <a href="{% url 'manage_departments' %}"
+           class="side-link {% if request.resolver_match.url_name == 'manage_departments' %}active{% endif %}">
+            <i class="far fa-building"></i> Khoa &amp; Đơn vị
+        </a>
+        <a href="{% url 'manage_majors' %}"
+           class="side-link {% if request.resolver_match.url_name == 'manage_majors' %}active{% endif %}">
+            <i class="fas fa-stream"></i> Ngành học
+        </a>
+        <a href="{% url 'manage_categories' %}"
+           class="side-link {% if request.resolver_match.url_name == 'manage_categories' %}active{% endif %}">
+            <i class="far fa-bookmark"></i> Loại câu hỏi
+        </a>
+
+        <div class="side-section">Người dùng</div>
+        <a href="{% url 'manage_advisors' %}"
+           class="side-link {% if request.resolver_match.url_name == 'manage_advisors' %}active{% endif %}">
+            <i class="far fa-id-badge"></i> Tư vấn viên
+        </a>
+        {% endif %}
+
+        {# Sổ tay ban tư vấn — cả admin và advisor đều xem được #}
+        <a href="{% url 'advisor_handbook' %}"
+           class="side-link {% if request.resolver_match.url_name == 'advisor_handbook' %}active{% endif %}">
+            <i class="far fa-address-book"></i> Sổ tay ban tư vấn
+        </a>
+    </aside>
+
+    <div class="admin-main">
+
+        <div class="admin-topbar">
+            <div class="crumb">
+                <span>{% block crumb_section %}Tổng quan{% endblock %}</span>
+                <i class="fas fa-chevron-right"></i>
+                <strong>{% block crumb_page %}Bảng điều khiển{% endblock %}</strong>
+            </div>
+
+            <div class="d-flex align-items-center gap-3">
+                <a href="{% url 'home' %}" class="btn btn-light btn-sm" title="Về trang chủ công khai">
+                    <i class="fas fa-home"></i> <span class="d-none d-md-inline">Trang chủ</span>
+                </a>
+                <span class="badge bg-info">
+                    {% if user.advisorprofile.role == 'admin' %}Quản trị viên{% else %}Tư vấn viên{% endif %}
+                    {% if user.advisorprofile.department %} · {{ user.advisorprofile.department.name }}{% endif %}
+                </span>
+                <div class="dropdown">
+                    <a class="user-chip dropdown-toggle" href="#" data-bs-toggle="dropdown">
+                        <span class="avatar">{{ user.first_name.0|default:user.username.0|upper }}</span>
+                        <span class="d-none d-md-inline">{{ user.get_full_name|default:user.username }}</span>
+                    </a>
+                    <ul class="dropdown-menu dropdown-menu-end">
+                        <li><a class="dropdown-item" href="{% url 'profile' %}">
+                            <i class="far fa-user me-2"></i>Hồ sơ
+                        </a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item" href="{% url 'logout' %}">
+                            <i class="fas fa-sign-out-alt me-2"></i>Đăng xuất
+                        </a></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="admin-content">
+            {% if messages %}
+            <div class="mb-4">
+                {% for message in messages %}
+                <div class="alert alert-{{ message.tags }} d-flex justify-content-between align-items-center">
+                    <span>{{ message }}</span>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+
+            {% block content %}{% endblock %}
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+{% block extra_js %}{% endblock %}
+</body>
+</html>

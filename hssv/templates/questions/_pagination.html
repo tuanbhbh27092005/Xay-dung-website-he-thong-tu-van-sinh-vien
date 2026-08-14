@@ -1,0 +1,59 @@
+{% if page_obj.paginator.num_pages > 1 %}
+<nav aria-label="Phân trang" style="margin-top: 2rem;">
+    <ul style="display: flex; align-items: center; justify-content: center; gap: 6px; list-style: none; padding: 0; margin: 0; flex-wrap: wrap;">
+        {% if page_obj.has_previous %}
+        <li>
+            <a href="?{% if page_query %}{{ page_query }}&{% endif %}page={{ page_obj.previous_page_number }}"
+               style="display: inline-flex; align-items: center; justify-content: center; min-width: 40px; height: 40px; padding: 0 12px; border: 1px solid #d1d5db; border-radius: 8px; background: #fff; color: #6b7280; font-size: 14px; font-weight: 600; text-decoration: none; transition: all .2s;"
+               aria-label="Trang trước">
+                <i class="fas fa-chevron-left" style="font-size: 12px;"></i>
+            </a>
+        </li>
+        {% else %}
+        <li>
+            <span style="display: inline-flex; align-items: center; justify-content: center; min-width: 40px; height: 40px; padding: 0 12px; border: 1px solid #d1d5db; border-radius: 8px; background: #fff; color: #6b7280; font-size: 14px; font-weight: 600; opacity: 0.4; cursor: not-allowed;">
+                <i class="fas fa-chevron-left" style="font-size: 12px;"></i>
+            </span>
+        </li>
+        {% endif %}
+
+        {% for num in page_obj.paginator.page_range %}
+            {% if page_obj.number == num %}
+            <li>
+                <span style="display: inline-flex; align-items: center; justify-content: center; min-width: 40px; height: 40px; padding: 0 12px; border: 1px solid #0b3f8c; border-radius: 8px; background: #0b3f8c; color: #fff; font-size: 14px; font-weight: 600; box-shadow: 0 2px 8px rgba(11,63,140,0.25);">{{ num }}</span>
+            </li>
+            {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+            <li>
+                <a href="?{% if page_query %}{{ page_query }}&{% endif %}page={{ num }}"
+                   style="display: inline-flex; align-items: center; justify-content: center; min-width: 40px; height: 40px; padding: 0 12px; border: 1px solid #d1d5db; border-radius: 8px; background: #fff; color: #6b7280; font-size: 14px; font-weight: 600; text-decoration: none; transition: all .2s;">{{ num }}</a>
+            </li>
+            {% elif num == 1 or num == page_obj.paginator.num_pages %}
+            <li>
+                <a href="?{% if page_query %}{{ page_query }}&{% endif %}page={{ num }}"
+                   style="display: inline-flex; align-items: center; justify-content: center; min-width: 40px; height: 40px; padding: 0 12px; border: 1px solid #d1d5db; border-radius: 8px; background: #fff; color: #6b7280; font-size: 14px; font-weight: 600; text-decoration: none; transition: all .2s;">{{ num }}</a>
+            </li>
+            {% elif num == page_obj.number|add:'-3' or num == page_obj.number|add:'3' %}
+            <li>
+                <span style="display: inline-flex; align-items: center; justify-content: center; min-width: 28px; height: 40px; color: #9ca3af; font-size: 14px;">…</span>
+            </li>
+            {% endif %}
+        {% endfor %}
+
+        {% if page_obj.has_next %}
+        <li>
+            <a href="?{% if page_query %}{{ page_query }}&{% endif %}page={{ page_obj.next_page_number }}"
+               style="display: inline-flex; align-items: center; justify-content: center; min-width: 40px; height: 40px; padding: 0 12px; border: 1px solid #d1d5db; border-radius: 8px; background: #fff; color: #6b7280; font-size: 14px; font-weight: 600; text-decoration: none; transition: all .2s;"
+               aria-label="Trang sau">
+                <i class="fas fa-chevron-right" style="font-size: 12px;"></i>
+            </a>
+        </li>
+        {% else %}
+        <li>
+            <span style="display: inline-flex; align-items: center; justify-content: center; min-width: 40px; height: 40px; padding: 0 12px; border: 1px solid #d1d5db; border-radius: 8px; background: #fff; color: #6b7280; font-size: 14px; font-weight: 600; opacity: 0.4; cursor: not-allowed;">
+                <i class="fas fa-chevron-right" style="font-size: 12px;"></i>
+            </span>
+        </li>
+        {% endif %}
+    </ul>
+</nav>
+{% endif %}

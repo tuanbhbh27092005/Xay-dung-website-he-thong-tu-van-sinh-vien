@@ -1,0 +1,303 @@
+{% extends 'admin_panel/base_admin.html' %}
+
+{% block title %}Bảng điều khiển · HCMUTE Quản trị{% endblock %}
+{% block crumb_section %}Tổng quan{% endblock %}
+{% block crumb_page %}Bảng điều khiển{% endblock %}
+
+{% block content %}
+
+{# ─── PAGE HEAD ─── #}
+<div class="page-head">
+    <div>
+        <span class="eyebrow">
+            {% if user.advisorprofile.role == 'admin' %}Toàn hệ thống{% else %}Khoa {{ user.advisorprofile.department.name }}{% endif %}
+        </span>
+        <h1 class="mt-2">Bảng điều khiển</h1>
+        <p class="page-sub">
+            Tổng quan hoạt động hỏi-đáp
+            {% if user.advisorprofile.role != 'admin' %}của khoa bạn quản lý{% endif %}.
+            Cập nhật theo thời gian thực.
+        </p>
+    </div>
+    <div class="d-flex gap-2">
+        <a href="{% url 'manage_questions' %}?status=pending" class="btn btn-outline btn-sm">
+            <i class="far fa-clock"></i> Câu chờ trả lời
+        </a>
+        <a href="{% url 'manage_questions' %}" class="btn btn-blue btn-sm">
+            <i class="fas fa-list"></i> Tất cả câu hỏi
+        </a>
+    </div>
+</div>
+
+{# ─── METRICS ROW ─── #}
+<div class="row g-4 mb-5">
+
+    <div class="col-md-3">
+        <div class="stat">
+            <div class="stat-label"><i class="far fa-comment-dots"></i> Tổng câu hỏi</div>
+            <div class="stat-num">{{ total_questions }}</div>
+            <div class="stat-foot">
+                <span>Tích lũy đến hiện tại</span>
+                <a href="{% url 'manage_questions' %}">
+                    Xem ngay <i class="fas fa-arrow-right ms-1"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-3">
+        <div class="stat warn">
+            <div class="stat-label"><i class="far fa-clock"></i> Chờ phản hồi</div>
+            <div class="stat-num" style="color: var(--warning);">{{ pending_questions }}</div>
+            <div class="stat-foot">
+                <span>Cần được xử lý sớm</span>
+                <a href="{% url 'manage_questions' %}?status=pending">
+                    Xem ngay <i class="fas fa-arrow-right ms-1"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-3">
+        <div class="stat success">
+            <div class="stat-label"><i class="fas fa-check-circle"></i> Đã trả lời</div>
+            <div class="stat-num" style="color: var(--success);">{{ answered_questions }}</div>
+            <div class="stat-foot">
+                <span>Đã có câu trả lời chính thức</span>
+                <a href="{% url 'manage_questions' %}?status=answered">
+                    Xem ngay <i class="fas fa-arrow-right ms-1"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    {# ─── Card quá hạn ─── #}
+    <div class="col-md-3">
+        <div class="stat" style="{% if overdue_count > 0 %}background: #fef2f2; border: 2px solid #dc2626;{% endif %}">
+            <div class="stat-label" style="{% if overdue_count > 0 %}color: #dc2626;{% endif %}">
+                <i class="fas fa-fire"></i> Quá hạn ({{ overdue_hours }}h)
+            </div>
+            <div class="stat-num" style="{% if overdue_count > 0 %}color: #dc2626;{% endif %}">
+                {{ overdue_count }}
+            </div>
+            <div class="stat-foot">
+                <span>Pending quá {{ overdue_hours }}h</span>
+                {% if overdue_count > 0 %}
+                <a href="{% url 'manage_questions' %}?status=pending" style="color: #dc2626; font-weight: 700;">
+                    Xử lý ngay <i class="fas fa-arrow-right ms-1"></i>
+                </a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+{% if user.advisorprofile.role == 'admin' %}
+{# ─── CHARTS ROW (admin only) ─── #}
+<div class="row g-4 mb-5">
+    <div class="col-lg-6">
+        <div class="card h-100">
+            <div class="card-header">
+                <div>
+                    <span class="eyebrow eyebrow-blue">Phân bố trạng thái</span>
+                    <h5 class="mt-2 mb-0">Tỉ lệ câu hỏi theo trạng thái</h5>
+                </div>
+            </div>
+            <div class="card-body" style="padding: var(--sp-6);">
+                <canvas id="questionChart" height="200"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-6">
+        <div class="card h-100">
+            <div class="card-header">
+                <div>
+                    <span class="eyebrow eyebrow-blue">12 tháng gần nhất</span>
+                    <h5 class="mt-2 mb-0">Câu hỏi theo tháng</h5>
+                </div>
+                <a href="{% url 'statistics_dashboard' %}" class="btn btn-ghost btn-sm">
+                    Báo cáo đầy đủ <i class="fas fa-arrow-right"></i>
+                </a>
+            </div>
+            <div class="card-body" style="padding: var(--sp-6);">
+                <canvas id="monthlyChart" height="200"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+{# ─── QUICK NAV (admin only) ─── #}
+<div class="row g-4">
+
+    <div class="col-md-6">
+        <div class="card h-100">
+            <div class="card-header">
+                <h5><i class="fas fa-cogs text-blue me-2"></i>Quản lý danh mục</h5>
+            </div>
+            <div class="list-group list-group-flush">
+                <a href="{% url 'manage_departments' %}" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+                    <div>
+                        <strong>Khoa &amp; Đơn vị</strong>
+                        <div class="muted small">Thiết lập cơ cấu tổ chức tư vấn</div>
+                    </div>
+                    <i class="fas fa-chevron-right muted-2"></i>
+                </a>
+                <a href="{% url 'manage_majors' %}" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+                    <div>
+                        <strong>Ngành học</strong>
+                        <div class="muted small">Quản lý các ngành đào tạo</div>
+                    </div>
+                    <i class="fas fa-chevron-right muted-2"></i>
+                </a>
+                <a href="{% url 'manage_categories' %}" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+                    <div>
+                        <strong>Loại câu hỏi</strong>
+                        <div class="muted small">Phân loại để dễ tìm kiếm</div>
+                    </div>
+                    <i class="fas fa-chevron-right muted-2"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6">
+        <div class="card h-100">
+            <div class="card-header">
+                <h5><i class="fas fa-users text-red me-2"></i>Quản lý người dùng</h5>
+            </div>
+            <div class="list-group list-group-flush">
+                <a href="{% url 'manage_advisors' %}" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+                    <div>
+                        <strong>Tư vấn viên</strong>
+                        <div class="muted small">Phân công cán bộ tư vấn theo khoa</div>
+                    </div>
+                    <i class="fas fa-chevron-right muted-2"></i>
+                </a>
+
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+{% endblock %}
+
+{# ─── JS CHARTS — phải nằm NGOÀI {% block content %} để Django render đúng ─── #}
+{% block extra_js %}
+{% if user.advisorprofile.role == 'admin' %}
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+
+    // ─── Chart 1: Bar chart trạng thái ───
+    const ctx1 = document.getElementById('questionChart');
+    if (ctx1) {
+        new Chart(ctx1.getContext('2d'), {
+            type: 'bar',
+            data: {
+                labels: ['Tổng câu hỏi', 'Chờ phản hồi', 'Đã trả lời'],
+                datasets: [{
+                    data: [{{ total_questions }}, {{ pending_questions }}, {{ answered_questions }}],
+                    backgroundColor: ['#0B3F8C', '#B45309', '#1B7F3F'],
+                    borderRadius: 6,
+                    borderSkipped: false,
+                    barThickness: 60,
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        backgroundColor: '#1A1F2E',
+                        titleFont: { family: 'Be Vietnam Pro', size: 13, weight: 700 },
+                        bodyFont:  { family: 'Be Vietnam Pro', size: 13 },
+                        padding: 10,
+                        cornerRadius: 6,
+                    }
+                },
+                scales: {
+                    x: {
+                        grid: { display: false, drawBorder: false },
+                        ticks: { color: '#7A8194', font: { family: 'Be Vietnam Pro', size: 12 } }
+                    },
+                    y: {
+                        beginAtZero: true,
+                        grid: { color: '#E5E7EC', drawBorder: false },
+                        ticks: { color: '#7A8194', font: { family: 'Be Vietnam Pro', size: 12 }, precision: 0 }
+                    }
+                }
+            }
+        });
+    }
+
+    // ─── Chart 2: Stacked bar chart 12 tháng ───
+    const ctx2 = document.getElementById('monthlyChart');
+    if (ctx2) {
+        const monthLabels = [{% for m in monthly_stats %}'{{ m.label }}'{% if not forloop.last %},{% endif %}{% endfor %}];
+        const dataAnswered = [{% for m in monthly_stats %}{{ m.answered }}{% if not forloop.last %},{% endif %}{% endfor %}];
+        const dataPending  = [{% for m in monthly_stats %}{{ m.pending }}{% if not forloop.last %},{% endif %}{% endfor %}];
+
+        new Chart(ctx2.getContext('2d'), {
+            type: 'bar',
+            data: {
+                labels: monthLabels,
+                datasets: [
+                    {
+                        label: 'Đã trả lời',
+                        data: dataAnswered,
+                        backgroundColor: '#1B7F3F',
+                        minBarLength: 3,
+                    },
+                    {
+                        label: 'Chờ phản hồi',
+                        data: dataPending,
+                        backgroundColor: '#B45309',
+                        minBarLength: 3,
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: { font: { family: 'Be Vietnam Pro', size: 12 }, padding: 14 }
+                    },
+                    tooltip: {
+                        backgroundColor: '#1A1F2E',
+                        titleFont: { family: 'Be Vietnam Pro', size: 13, weight: 700 },
+                        bodyFont:  { family: 'Be Vietnam Pro', size: 13 },
+                        padding: 10,
+                        cornerRadius: 6,
+                        callbacks: {
+                            footer: function (items) {
+                                let total = 0;
+                                items.forEach(it => total += it.parsed.y);
+                                return 'Tổng: ' + total + ' câu';
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        stacked: true,
+                        grid: { display: false, drawBorder: false },
+                        ticks: { color: '#7A8194', font: { family: 'Be Vietnam Pro', size: 11 } }
+                    },
+                    y: {
+                        stacked: true,
+                        beginAtZero: true,
+                        grid: { color: '#E5E7EC', drawBorder: false },
+                        ticks: { color: '#7A8194', font: { family: 'Be Vietnam Pro', size: 11 }, precision: 0 }
+                    }
+                }
+            }
+        });
+    }
+});
+</script>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,145 @@
+{% extends 'admin_panel/base_admin.html' %}
+{% load widget_tweaks %}
+
+{% block title %}Trả lời câu hỏi #{{ question.id }} - Tư Vấn Sinh Viên{% endblock %}
+
+{% block crumb_section %}Câu hỏi{% endblock %}
+{% block crumb_page %}Trả lời câu hỏi{% endblock %}
+
+{% block content %}
+<div class="admin-header d-flex justify-content-between align-items-center">
+    <h2><i class="fas fa-reply me-2"></i>Trả lời câu hỏi</h2>
+    <a href="{% url 'manage_questions' %}" class="btn btn-outline-secondary btn-sm">
+        <i class="fas fa-arrow-left me-1"></i> Danh sách câu hỏi
+    </a>
+</div>
+
+{# ─── Nội dung câu hỏi ─── #}
+<div class="card mb-4">
+    <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">
+            <i class="fas fa-question-circle me-2"></i>Câu hỏi #{{ question.id }}
+        </h5>
+        {% if question.status == 'pending' %}
+        <span class="badge bg-warning">Chưa trả lời</span>
+        {% else %}
+        <span class="badge bg-success">Đã trả lời</span>
+        {% endif %}
+    </div>
+    <div class="card-body">
+        <h4 class="mb-3">{{ question.title }}</h4>
+        <p class="text-muted">{{ question.content|linebreaks }}</p>
+
+        <hr>
+
+        <div class="row text-muted small">
+            <div class="col-md-6">
+                <p class="mb-1">
+                    <i class="fas fa-user me-1"></i>
+                    <strong>Người hỏi:</strong>
+                    {{ question.user.get_full_name|default:question.user.username }}
+                </p>
+                <p class="mb-1">
+                    <i class="fas fa-clock me-1"></i>
+                    <strong>Ngày tạo:</strong> {{ question.created_at|date:"d/m/Y H:i" }}
+                </p>
+            </div>
+            <div class="col-md-6">
+                {% if question.category %}
+                <p class="mb-1">
+                    <i class="fas fa-tag me-1"></i>
+                    <strong>Loại:</strong>
+                    <span class="badge bg-info">{{ question.category.name }}</span>
+                </p>
+                {% endif %}
+                {% if question.major %}
+                <p class="mb-1">
+                    <i class="fas fa-graduation-cap me-1"></i>
+                    <strong>Ngành:</strong>
+                    <span class="badge bg-secondary">{{ question.major.name }}</span>
+                    {% if question.major.department %}
+                    <span class="badge bg-light text-dark">{{ question.major.department.name }}</span>
+                    {% endif %}
+                </p>
+                {% endif %}
+                <p class="mb-1">
+                    <i class="fas fa-{% if question.is_public %}globe{% else %}lock{% endif %} me-1"></i>
+                    <strong>Quyền:</strong>
+                    {% if question.is_public %}
+                    <span class="badge bg-success">Công khai</span>
+                    {% else %}
+                    <span class="badge bg-dark">Riêng tư</span>
+                    {% endif %}
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+{# ─── Các câu trả lời đã có ─── #}
+{% if answers %}
+<div class="card mb-4">
+    <div class="card-header bg-success text-white">
+        <h5 class="mb-0">
+            <i class="fas fa-comments me-2"></i>Câu trả lời đã có ({{ answers|length }})
+        </h5>
+    </div>
+    <div class="card-body p-0">
+        <div class="list-group list-group-flush">
+            {% for answer in answers %}
+            <div class="list-group-item">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <div>
+                        <strong>{{ answer.user.get_full_name|default:answer.user.username }}</strong>
+                        {% if answer.user.advisorprofile %}
+                        <span class="badge bg-primary ms-1">{{ answer.user.advisorprofile.get_role_display }}</span>
+                        {% if answer.user.advisorprofile.department %}
+                        <span class="badge bg-info ms-1">{{ answer.user.advisorprofile.department.name }}</span>
+                        {% endif %}
+                        {% endif %}
+                    </div>
+                    <small class="text-muted">{{ answer.created_at|date:"d/m/Y H:i" }}</small>
+                </div>
+                <p class="mb-0">{{ answer.content|linebreaks }}</p>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endif %}
+
+{# ─── Form trả lời mới ─── #}
+<div class="card">
+    <div class="card-header bg-warning text-dark">
+        <h5 class="mb-0">
+            <i class="fas fa-pen-to-square me-2"></i>
+            {% if answers %}Bổ sung câu trả lời{% else %}Soạn câu trả lời{% endif %}
+        </h5>
+    </div>
+    <div class="card-body">
+        <form method="post">
+            {% csrf_token %}
+            <div class="mb-3">
+                <label for="{{ form.content.id_for_label }}" class="form-label">
+                    {{ form.content.label }} <span class="text-danger">*</span>
+                </label>
+                {{ form.content.errors }}
+                {{ form.content|add_class:"form-control" }}
+                <div class="form-text">
+                    Trả lời chính thức của ban tư vấn. Câu trả lời sẽ hiển thị cho người đặt câu hỏi
+                    và trên trang chi tiết câu hỏi (nếu công khai).
+                </div>
+            </div>
+
+            <div class="d-flex justify-content-between">
+                <a href="{% url 'manage_questions' %}" class="btn btn-outline-secondary">
+                    <i class="fas fa-times me-1"></i>Hủy
+                </a>
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-paper-plane me-1"></i>Gửi câu trả lời
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

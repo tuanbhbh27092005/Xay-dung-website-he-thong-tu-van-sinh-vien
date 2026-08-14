@@ -1,0 +1,372 @@
+{% extends 'admin_panel/base_admin.html' %}
+{% load widget_tweaks %}
+
+{% block title %}{% if is_create %}Tạo tin mới{% else %}Sửa tin{% endif %} · HCMUTE Quản trị{% endblock %}
+{% block crumb_section %}Tin tức{% endblock %}
+{% block crumb_page %}{% if is_create %}Tạo bài mới{% else %}Sửa: {{ news.title|truncatechars:40 }}{% endif %}{% endblock %}
+
+{% block extra_css %}
+<link href="https://cdn.jsdelivr.net/npm/quill@2/dist/quill.snow.css" rel="stylesheet">
+<style>
+    /* Quill editor styling */
+    #quill-editor {
+        min-height: 360px;
+        background: #fff;
+        font-family: var(--font-sans);
+        font-size: 15px;
+        line-height: 1.7;
+    }
+    #quill-editor img {
+        max-width: 100%;
+        height: auto;
+        border-radius: 8px;
+        margin: 10px 0;
+    }
+    .ql-toolbar.ql-snow {
+        border-top-left-radius: 8px;
+        border-top-right-radius: 8px;
+        background: var(--bg-soft);
+    }
+    .ql-container.ql-snow {
+        border-bottom-left-radius: 8px;
+        border-bottom-right-radius: 8px;
+    }
+    .thumb-preview {
+        margin-top: 10px;
+        max-width: 100%;
+        max-height: 180px;
+        border-radius: 8px;
+        border: 1px solid var(--border);
+        display: none;
+        object-fit: cover;
+    }
+    .thumb-preview.show { display: block; }
+    .thumb-current {
+        margin-top: 10px;
+        max-width: 100%;
+        max-height: 160px;
+        border-radius: 8px;
+        border: 1px solid var(--border);
+        object-fit: cover;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<div class="page-head">
+    <div>
+        <span class="eyebrow">{% if is_create %}Tạo mới{% else %}Chỉnh sửa{% endif %}</span>
+        <h1 class="mt-2">{% if is_create %}Tạo bài viết mới{% else %}Sửa bài viết{% endif %}</h1>
+        <p class="page-sub">
+            {% if is_create %}Điền thông tin và soạn nội dung — có thể chèn ảnh trực tiếp.{% else %}Cập nhật nội dung bài viết.{% endif %}
+        </p>
+    </div>
+    <a href="{% url 'news:manage_list' %}" class="btn btn-light btn-sm">
+        <i class="fas fa-arrow-left"></i> Quay lại
+    </a>
+</div>
+
+<form method="post" enctype="multipart/form-data" class="row g-4" id="news-form">
+    {% csrf_token %}
+
+    {# LEFT: main content #}
+    <div class="col-lg-8">
+        <div class="card mb-4">
+            <div class="card-body" style="padding: 32px;">
+
+                <div class="mb-4">
+                    <label class="form-label">{{ form.title.label }}</label>
+                    {{ form.title|add_class:"form-control"|attr:"style:font-size: 18px; font-weight: 600;" }}
+                    {% if form.title.errors %}<div class="alert alert-danger mt-2 py-2 small">{{ form.title.errors|join:" · " }}</div>{% endif %}
+                </div>
+
+                <div class="mb-4">
+                    <label class="form-label">{{ form.summary.label }}</label>
+                    {{ form.summary|add_class:"form-control" }}
+                    <div class="form-text">{{ form.summary.help_text }}</div>
+                </div>
+
+                <div>
+                    <label class="form-label">
+                        {{ form.content.label }}
+                        <span class="muted small">— Hỗ trợ định dạng và chèn ảnh trực tiếp</span>
+                    </label>
+                    {# Quill editor sẽ replace div này, content được sync ngược về textarea ẩn khi submit #}
+                    <div id="quill-editor"></div>
+                    {# Hidden textarea giữ HTML cho form submit #}
+                    <textarea name="{{ form.content.html_name }}" id="id_content_hidden" style="display:none;">{{ form.content.value|default:'' }}</textarea>
+                    {% if form.content.errors %}<div class="alert alert-danger mt-2 py-2 small">{{ form.content.errors|join:" · " }}</div>{% endif %}
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    {# RIGHT: meta + actions #}
+    <div class="col-lg-4">
+
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5><i class="fas fa-cog text-blue me-1"></i> Cấu hình</h5>
+            </div>
+            <div class="card-body">
+
+                <div class="mb-3">
+                    <label class="form-label">{{ form.category.label }}</label>
+                    {{ form.category|add_class:"form-select" }}
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">{{ form.department.label }}</label>
+                    {{ form.department|add_class:"form-select" }}
+                    <div class="form-text">Để trống nếu không phải tin của khoa cụ thể.</div>
+                </div>
+
+                {# Thumbnail upload (file) #}
+                <div class="mb-3">
+                    <label class="form-label">{{ form.thumbnail_image.label }}</label>
+                    {% if news.thumbnail_image %}
+                    <div class="muted small mb-2">Ảnh hiện tại:</div>
+                    <img src="{{ news.thumbnail_image.url }}" class="thumb-current mb-2" alt="thumbnail">
+                    {% endif %}
+                    {{ form.thumbnail_image|add_class:"form-control" }}
+                    <img id="thumb-preview" class="thumb-preview" alt="preview">
+                    <div class="form-text">{{ form.thumbnail_image.help_text }}</div>
+                    {% if form.thumbnail_image.errors %}<div class="alert alert-danger mt-2 py-2 small">{{ form.thumbnail_image.errors|join:" · " }}</div>{% endif %}
+                </div>
+
+                {# Thumbnail URL fallback #}
+                <div class="mb-3">
+                    <label class="form-label">{{ form.thumbnail_url.label }}</label>
+                    {{ form.thumbnail_url|add_class:"form-control form-control-sm" }}
+                    <div class="form-text">{{ form.thumbnail_url.help_text }}</div>
+                </div>
+
+                <div class="form-check">
+                    {{ form.is_published|add_class:"form-check-input" }}
+                    <label class="form-check-label" for="{{ form.is_published.id_for_label }}">
+                        {{ form.is_published.label }}
+                    </label>
+                </div>
+            </div>
+        </div>
+
+        <div class="d-flex gap-2">
+            <button type="submit" class="btn btn-primary flex-fill">
+                <i class="fas fa-save"></i> {% if is_create %}Tạo bài{% else %}Lưu{% endif %}
+            </button>
+            <a href="{% url 'news:manage_list' %}" class="btn btn-light">Huỷ</a>
+        </div>
+
+        {% if not is_create %}
+        <div class="card mt-4">
+            <div class="card-body" style="padding: 16px;">
+                <div class="muted small mb-2">
+                    Tạo: {{ news.created_at|date:"d/m/Y H:i" }}<br>
+                    Cập nhật: {{ news.updated_at|date:"d/m/Y H:i" }}<br>
+                    Lượt xem: {{ news.views_count }}<br>
+                    Bình luận: {{ news.comments.count }}
+                </div>
+                <hr class="my-2">
+                <a href="{{ news.get_absolute_url }}" class="btn btn-light btn-sm w-100" target="_blank">
+                    <i class="fas fa-external-link-alt"></i> Xem trang công khai
+                </a>
+            </div>
+        </div>
+        {% endif %}
+
+    </div>
+</form>
+
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/quill@2/dist/quill.js"></script>
+<script>
+(function () {
+    const csrfToken = '{{ csrf_token }}';
+    const uploadUrl = "{% url 'news:upload_inline_image' %}";
+    const initialContent = document.getElementById('id_content_hidden').value;
+
+    // Init Quill
+    const quill = new Quill('#quill-editor', {
+        theme: 'snow',
+        placeholder: 'Soạn nội dung bài viết. Có thể chèn ảnh, link, định dạng...',
+        modules: {
+            toolbar: {
+                container: [
+                    [{header: [1, 2, 3, false]}],
+                    ['bold', 'italic', 'underline', 'strike'],
+                    [{color: []}, {background: []}],
+                    [{list: 'ordered'}, {list: 'bullet'}],
+                    [{align: []}],
+                    ['blockquote', 'code-block'],
+                    ['link', 'image'],
+                    ['clean'],
+                ],
+                handlers: {
+                    image: imageHandler,
+                },
+            },
+        },
+    });
+
+    // Load initial HTML
+    if (initialContent && initialContent.trim()) {
+        quill.clipboard.dangerouslyPasteHTML(initialContent);
+    }
+
+    // ─── Helper: upload file ảnh lên server, trả URL ───
+    async function uploadImageFile(file) {
+        if (!file || !file.type || !file.type.startsWith('image/')) {
+            throw new Error('File không phải ảnh.');
+        }
+        if (file.size > 5 * 1024 * 1024) {
+            throw new Error('Ảnh vượt quá 5 MB.');
+        }
+        const formData = new FormData();
+        formData.append('image', file);
+        const res = await fetch(uploadUrl, {
+            method: 'POST',
+            headers: {'X-CSRFToken': csrfToken},
+            body: formData,
+        });
+        const data = await res.json();
+        if (!res.ok || !data.url) {
+            throw new Error(data.error || 'Upload thất bại');
+        }
+        return data.url;
+    }
+
+    // ─── Helper: insert ảnh đang upload với placeholder ───
+    async function insertImageAtCursor(file) {
+        const range = quill.getSelection(true) || {index: quill.getLength()};
+        const placeholderText = '⌛ Đang tải ảnh lên...';
+        quill.insertText(range.index, placeholderText, 'italic', true);
+        try {
+            const url = await uploadImageFile(file);
+            quill.deleteText(range.index, placeholderText.length);
+            quill.insertEmbed(range.index, 'image', url);
+            quill.setSelection(range.index + 1);
+        } catch (err) {
+            quill.deleteText(range.index, placeholderText.length);
+            alert('Lỗi khi tải ảnh lên: ' + err.message);
+        }
+    }
+
+    // ─── Toolbar button: chọn file từ máy ───
+    function imageHandler() {
+        const input = document.createElement('input');
+        input.setAttribute('type', 'file');
+        input.setAttribute('accept', 'image/*');
+        input.click();
+        input.onchange = async () => {
+            const file = input.files && input.files[0];
+            if (file) await insertImageAtCursor(file);
+        };
+    }
+
+    // ─── Intercept PASTE: nếu clipboard có ảnh → upload server thay vì base64 ───
+    quill.root.addEventListener('paste', (e) => {
+        const items = (e.clipboardData || window.clipboardData)?.items;
+        if (!items) return;
+        for (let i = 0; i < items.length; i++) {
+            if (items[i].type && items[i].type.startsWith('image/')) {
+                e.preventDefault();
+                const file = items[i].getAsFile();
+                if (file) insertImageAtCursor(file);
+                return;
+            }
+        }
+    });
+
+    // ─── Intercept DROP: kéo-thả ảnh vào editor → upload server ───
+    quill.root.addEventListener('drop', (e) => {
+        if (!e.dataTransfer || !e.dataTransfer.files || e.dataTransfer.files.length === 0) return;
+        const files = Array.from(e.dataTransfer.files).filter(f => f.type.startsWith('image/'));
+        if (files.length === 0) return;
+        e.preventDefault();
+        files.forEach(f => insertImageAtCursor(f));
+    });
+
+    // ─── Safety net: trước khi submit, convert mọi base64 image còn sót → upload ───
+    async function convertBase64Images() {
+        const html = quill.root.innerHTML;
+        if (!html.includes('data:image')) return html;
+
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(html, 'text/html');
+        const imgs = doc.querySelectorAll('img[src^="data:image"]');
+        if (imgs.length === 0) return html;
+
+        for (const img of imgs) {
+            try {
+                // Convert data URI → Blob → File
+                const dataUri = img.getAttribute('src');
+                const resp = await fetch(dataUri);
+                const blob = await resp.blob();
+                if (blob.size > 5 * 1024 * 1024) {
+                    throw new Error('1 ảnh trong nội dung > 5 MB');
+                }
+                const ext = (blob.type.split('/')[1] || 'png').replace('jpeg', 'jpg');
+                const file = new File([blob], `pasted-${Date.now()}.${ext}`, {type: blob.type});
+                const url = await uploadImageFile(file);
+                img.setAttribute('src', url);
+            } catch (err) {
+                throw new Error('Không tải được 1 ảnh trong bài: ' + err.message);
+            }
+        }
+        return doc.body.innerHTML;
+    }
+
+    // ─── Sync Quill content vào hidden textarea khi submit ───
+    const form = document.getElementById('news-form');
+    let isSubmitting = false;
+    form.addEventListener('submit', async (e) => {
+        if (isSubmitting) return;
+        e.preventDefault();
+        isSubmitting = true;
+
+        const submitBtn = form.querySelector('button[type="submit"]');
+        const originalLabel = submitBtn ? submitBtn.innerHTML : '';
+        if (submitBtn) {
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Đang xử lý ảnh...';
+        }
+
+        try {
+            const cleanHtml = await convertBase64Images();
+            document.getElementById('id_content_hidden').value = cleanHtml;
+            form.submit();
+        } catch (err) {
+            alert(err.message);
+            isSubmitting = false;
+            if (submitBtn) {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = originalLabel;
+            }
+        }
+    });
+
+    // Thumbnail preview khi chọn file
+    const thumbInput = document.getElementById('{{ form.thumbnail_image.id_for_label }}');
+    const thumbPreview = document.getElementById('thumb-preview');
+    if (thumbInput && thumbPreview) {
+        thumbInput.addEventListener('change', (e) => {
+            const file = e.target.files && e.target.files[0];
+            if (!file) {
+                thumbPreview.classList.remove('show');
+                return;
+            }
+            const reader = new FileReader();
+            reader.onload = (ev) => {
+                thumbPreview.src = ev.target.result;
+                thumbPreview.classList.add('show');
+            };
+            reader.readAsDataURL(file);
+        });
+    }
+})();
+</script>
+{% endblock %}

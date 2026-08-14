@@ -1,0 +1,138 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ major.name }} - Tư Vấn Sinh Viên{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Synchronized question card: hover lift + accent stripe */
+    .q-card {
+        position: relative;
+        transition: all .25s ease;
+        background: var(--bg);
+        border: 1px solid var(--border);
+        border-radius: var(--r-lg);
+        padding: var(--sp-5);
+        margin-bottom: var(--sp-4);
+        box-shadow: var(--shadow-sm);
+    }
+    .q-card::before {
+        content: '';
+        position: absolute;
+        left: 0; top: 0; bottom: 0;
+        width: 3px;
+        background: linear-gradient(180deg, var(--brand-blue), var(--brand-red));
+        border-radius: 4px 0 0 4px;
+        transform: scaleY(0);
+        transform-origin: top;
+        transition: transform .3s;
+    }
+    .q-card:hover {
+        transform: translateX(4px);
+        box-shadow: 0 10px 28px rgba(11,63,140,0.10);
+        border-color: var(--brand-blue);
+    }
+    .q-card:hover::before { transform: scaleY(1); }
+
+    .q-card .q-title {
+        display: block;
+        font-size: 1.1rem;
+        font-weight: 700;
+        color: var(--text);
+        text-decoration: none;
+        margin-bottom: var(--sp-2);
+        line-height: 1.4;
+    }
+    .q-card .q-title:hover { color: var(--brand-red); text-decoration: none; }
+    .q-card .q-excerpt {
+        color: var(--text-2);
+        font-size: 14px;
+        line-height: 1.55;
+        margin-bottom: var(--sp-3);
+    }
+    .q-card .q-meta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: var(--sp-3);
+        align-items: center;
+        font-size: 12px;
+        color: var(--text-3);
+        border-top: 1px solid var(--border);
+        padding-top: var(--sp-3);
+    }
+    .q-card .q-meta .dot { color: var(--border-2); }
+    .q-card .q-meta i { color: var(--brand-blue); margin-right: 4px; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
+        <div>
+            <span class="eyebrow eyebrow-blue">Ngành học liên quan</span>
+            <h2 class="mt-2 mb-1">Câu hỏi về ngành: {{ major.name }}</h2>
+            <p class="text-muted mb-0">
+                <i class="fas fa-building text-red me-1"></i> Khoa/Đơn vị: <strong>{{ major.department.name }}</strong>
+            </p>
+        </div>
+        <div>
+            <a href="{% url 'ask_question' %}" class="btn btn-primary shadow-sm">
+                <i class="fas fa-plus me-1"></i> Đặt câu hỏi mới
+            </a>
+        </div>
+    </div>
+
+    {% if major.description %}
+    <div class="alert alert-info mb-4 shadow-sm border-0">
+        <i class="fas fa-info-circle text-blue me-2"></i> {{ major.description }}
+    </div>
+    {% endif %}
+
+    <hr class="mt-2 mb-4">
+
+    {% if questions %}
+        {% for question in questions %}
+        <article class="q-card">
+            <div class="d-flex justify-content-between align-items-start gap-3">
+                <a href="{% url 'question_detail' question.id %}" class="q-title">
+                    {{ question.title }}
+                </a>
+                {% if question.status == 'pending' %}
+                <span class="badge bg-warning" style="white-space: nowrap;">Chưa trả lời</span>
+                {% else %}
+                <span class="badge bg-success" style="white-space: nowrap;">Đã trả lời</span>
+                {% endif %}
+            </div>
+            <p class="q-excerpt">{{ question.content|truncatechars:160 }}</p>
+            <div class="q-meta">
+                {% if question.major %}
+                    <span><i class="fas fa-graduation-cap"></i> {{ question.major.name }}</span>
+                {% endif %}
+                {% if question.category %}
+                    {% if question.major %}<span class="dot">·</span>{% endif %}
+                    <span><i class="fas fa-tag"></i> {{ question.category.name }}</span>
+                {% endif %}
+                <span class="dot">·</span>
+                <span title="Lượt xem"><i class="far fa-eye"></i> {{ question.views_count }}</span>
+                <span class="dot">·</span>
+                <span><i class="far fa-user"></i> {{ question.user.get_full_name|default:question.user.username }}</span>
+                <span class="dot">·</span>
+                <span><i class="far fa-calendar"></i> {{ question.created_at|date:"d/m/Y H:i" }}</span>
+            </div>
+        </article>
+        {% endfor %}
+    {% else %}
+        <div class="card border-0 shadow-sm mt-3">
+            <div class="card-body p-5 text-center">
+                <div class="text-muted mb-3" style="font-size: 48px;">
+                    <i class="far fa-question-circle"></i>
+                </div>
+                <h5 class="text-muted mb-2">Chưa có câu hỏi nào</h5>
+                <p class="text-muted small mb-4">Ngành học này hiện chưa có câu hỏi nào được tạo.</p>
+                <a href="{% url 'chatbot:chat' %}" class="btn btn-blue btn-sm">
+                    <i class="fas fa-robot"></i> Hỏi trợ lý AI
+                </a>
+            </div>
+        </div>
+    {% endif %}
+</div>
+{% endblock %} 

@@ -1,0 +1,109 @@
+{% extends 'admin_panel/base_admin.html' %}
+{% load widget_tweaks %}
+
+{% block title %}Chỉnh sửa câu hỏi - Tư Vấn Sinh Viên{% endblock %}
+
+{% block content %}
+<div class="admin-header">
+    <h2><i class="fas fa-edit me-2"></i>Chỉnh sửa câu hỏi</h2>
+</div>
+
+<div class="card">
+    <div class="card-header bg-primary text-white">
+        <h5 class="mb-0">Chỉnh sửa câu hỏi #{{ question.id }}</h5>
+    </div>
+    <div class="card-body">
+        <form method="post">
+            {% csrf_token %}
+            
+            <div class="mb-3">
+                <label for="{{ form.title.id_for_label }}" class="form-label">{{ form.title.label }}</label>
+                {{ form.title.errors }}
+                {{ form.title|add_class:"form-control" }}
+            </div>
+            
+            <div class="mb-3">
+                <label for="{{ form.content.id_for_label }}" class="form-label">{{ form.content.label }}</label>
+                {{ form.content.errors }}
+                {{ form.content|add_class:"form-control" }}
+            </div>
+            
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label for="{{ form.category.id_for_label }}" class="form-label">{{ form.category.label }}</label>
+                        {{ form.category.errors }}
+                        {{ form.category|add_class:"form-select" }}
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label for="{{ form.major.id_for_label }}" class="form-label">{{ form.major.label }}</label>
+                        {{ form.major.errors }}
+                        {{ form.major|add_class:"form-select" }}
+                    </div>
+                </div>
+            </div>
+            
+            <div class="mb-3">
+                <label for="{{ form.status.id_for_label }}" class="form-label">{{ form.status.label }}</label>
+                {{ form.status.errors }}
+                {{ form.status|add_class:"form-select" }}
+            </div>
+            
+            <div class="d-flex justify-content-between">
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-save me-1"></i>Lưu thay đổi
+                </button>
+                <div>
+                    <a href="{% url 'manage_questions' %}" class="btn btn-outline-secondary me-2">
+                        <i class="fas fa-times me-1"></i>Hủy
+                    </a>
+                    <a href="{% url 'question_detail' question.id %}" class="btn btn-info" target="_blank">
+                        <i class="fas fa-eye me-1"></i>Xem chi tiết
+                    </a>
+                </div>
+            </div>
+        </form>
+    </div>
+    <div class="card-footer">
+        <div class="d-flex justify-content-between text-muted">
+            <div>
+                <small><i class="fas fa-user me-1"></i>Người đặt: {{ question.user.get_full_name|default:question.user.username }}</small>
+            </div>
+            <div>
+                <small><i class="fas fa-clock me-1"></i>Ngày tạo: {{ question.created_at|date:"d/m/Y H:i" }}</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% if question.answers.exists %}
+<div class="card mt-4">
+    <div class="card-header bg-primary text-white">
+        <h5 class="mb-0">Câu trả lời ({{ question.answers.count }})</h5>
+    </div>
+    <div class="card-body p-0">
+        <div class="list-group list-group-flush">
+            {% for answer in question.answers.all %}
+            <div class="list-group-item">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <div>
+                        <strong>{{ answer.user.get_full_name|default:answer.user.username }}</strong>
+                        {% if answer.user.advisorprofile %}
+                        <span class="badge bg-primary ms-1">{{ answer.user.advisorprofile.get_role_display }}</span>
+                        {% if answer.user.advisorprofile.department %}
+                        <span class="badge bg-info ms-1">{{ answer.user.advisorprofile.department.name }}</span>
+                        {% endif %}
+                        {% endif %}
+                    </div>
+                    <small class="text-muted">{{ answer.created_at|date:"d/m/Y H:i" }}</small>
+                </div>
+                <p class="mb-0">{{ answer.content|linebreaks }}</p>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %} 

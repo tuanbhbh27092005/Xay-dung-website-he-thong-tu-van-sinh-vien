@@ -1,0 +1,157 @@
+{% extends 'admin_panel/base_admin.html' %}
+{% load widget_tweaks %}
+
+{% block title %}Quản lý tư vấn viên - Tư Vấn Sinh Viên{% endblock %}
+
+{% block content %}
+<div class="admin-header">
+    <h2><i class="fas fa-users me-2"></i>Quản lý tư vấn viên</h2>
+</div>
+
+<div class="row">
+    <div class="col-md-4">
+        <div class="card mb-4">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">
+                    {% if form.instance.id %}
+                    <i class="fas fa-edit me-2"></i>Chỉnh sửa tư vấn viên
+                    {% else %}
+                    <i class="fas fa-plus me-2"></i>Thêm tư vấn viên mới
+                    {% endif %}
+                </h5>
+            </div>
+            <div class="card-body">
+                <form method="post" enctype="multipart/form-data">
+                    {% csrf_token %}
+
+                    <div class="mb-3">
+                        <label for="{{ form.user.id_for_label }}" class="form-label">{{ form.user.label }}</label>
+                        {{ form.user.errors }}
+                        {{ form.user|add_class:"form-select" }}
+                        <div class="form-text">Người dùng được chọn làm tư vấn viên</div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="{{ form.role.id_for_label }}" class="form-label">{{ form.role.label }}</label>
+                        {{ form.role.errors }}
+                        {{ form.role|add_class:"form-select" }}
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="{{ form.department.id_for_label }}" class="form-label">{{ form.department.label }}</label>
+                        {{ form.department.errors }}
+                        {{ form.department|add_class:"form-select" }}
+                    </div>
+
+                    <div class="row g-2 mb-3">
+                        <div class="col-5">
+                            <label for="{{ form.academic_title.id_for_label }}" class="form-label">{{ form.academic_title.label }}</label>
+                            {{ form.academic_title|add_class:"form-select" }}
+                        </div>
+                        <div class="col-7">
+                            <label for="{{ form.position.id_for_label }}" class="form-label">{{ form.position.label }}</label>
+                            {{ form.position|add_class:"form-control" }}
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="{{ form.avatar.id_for_label }}" class="form-label">{{ form.avatar.label }}</label>
+                        {{ form.avatar.errors }}
+                        {{ form.avatar|add_class:"form-control" }}
+                        <div class="form-text">{{ form.avatar.help_text }}</div>
+                    </div>
+
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-plus me-1"></i>Thêm mới
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                <h5 class="mb-0"><i class="fas fa-list me-2"></i>Danh sách tư vấn viên</h5>
+                <span class="badge bg-light text-dark">Tổng số: {{ advisors.count }}</span>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-striped table-hover mb-0">
+                        <thead class="table-primary">
+                            <tr>
+                                <th>ID</th>
+                                <th>Tên người dùng</th>
+                                <th>Vai trò</th>
+                                <th>Khoa/Đơn vị</th>
+                                <th>Thao tác</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for advisor in advisors %}
+                            <tr>
+                                <td>{{ advisor.id }}</td>
+                                <td>
+                                    <div>{{ advisor.user.get_full_name|default:advisor.user.username }}</div>
+                                    <small class="text-muted">{{ advisor.user.email }}</small>
+                                </td>
+                                <td>
+                                    <span class="badge bg-primary">{{ advisor.get_role_display }}</span>
+                                </td>
+                                <td>
+                                    {% if advisor.department %}
+                                    <span class="badge bg-info">{{ advisor.department.name }}</span>
+                                    {% else %}
+                                    <span class="text-muted">Không có</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <div class="btn-group">
+                                        <a href="{% url 'edit_advisor' advisor.id %}" class="btn btn-sm btn-warning" title="Chỉnh sửa">
+                                            <i class="fas fa-edit"></i>
+                                        </a>
+                                        <button type="button" class="btn btn-sm btn-danger" data-bs-toggle="modal" data-bs-target="#deleteModal{{ advisor.id }}" title="Xóa" {% if advisor.user == request.user %}disabled{% endif %}>
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </div>
+                                    
+                                    <!-- Modal xác nhận xóa -->
+                                    <div class="modal fade" id="deleteModal{{ advisor.id }}" tabindex="-1" aria-hidden="true">
+                                        <div class="modal-dialog">
+                                            <div class="modal-content">
+                                                <div class="modal-header bg-danger text-white">
+                                                    <h5 class="modal-title">Xác nhận xóa</h5>
+                                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                                </div>
+                                                <div class="modal-body">
+                                                    <p>Bạn có chắc chắn muốn xóa tư vấn viên "<strong>{{ advisor.user.get_full_name|default:advisor.user.username }}</strong>"?</p>
+                                                    <p class="text-danger"><strong>Lưu ý:</strong> Hành động này không thể hoàn tác.</p>
+                                                </div>
+                                                <div class="modal-footer">
+                                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                                                    <a href="{% url 'delete_advisor' advisor.id %}" class="btn btn-danger">Xóa</a>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="5" class="text-center py-4">
+                                    <div class="alert alert-info mb-0">
+                                        <i class="fas fa-info-circle me-2"></i>Chưa có tư vấn viên nào. Hãy thêm tư vấn viên mới.
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

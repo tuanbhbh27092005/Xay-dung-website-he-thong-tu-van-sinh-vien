@@ -1,0 +1,338 @@
+{% extends 'admin_panel/base_admin.html' %}
+
+{% block title %}Báo cáo thống kê · HCMUTE Quản trị{% endblock %}
+{% block crumb_section %}Thống kê{% endblock %}
+{% block crumb_page %}Báo cáo đầy đủ{% endblock %}
+
+{% block content %}
+
+{# ─── PAGE HEAD ─── #}
+<div class="page-head">
+    <div>
+        <span class="eyebrow eyebrow-blue">
+            {% if user.advisorprofile.role == 'admin' %}Toàn hệ thống{% else %}Khoa {{ user.advisorprofile.department.name }}{% endif %}
+        </span>
+        <h1 class="mt-2">Báo cáo thống kê</h1>
+        <p class="page-sub">
+            Phân tích chi tiết hoạt động hỏi-đáp
+            {% if user.advisorprofile.role != 'admin' %}của khoa bạn quản lý{% endif %}.
+        </p>
+    </div>
+    <div class="d-flex gap-2 align-items-center">
+        <div class="dropdown">
+            <button class="btn btn-outline btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                <i class="fas fa-calendar-alt me-1"></i>
+                {% if time_filter == 'custom' %}{{ time_filter_label }}
+                {% elif time_filter == '3m' %}3 tháng gần nhất
+                {% elif time_filter == '6m' %}6 tháng gần nhất
+                {% elif time_filter == '1y' %}1 năm gần nhất
+                {% else %}Tất cả thời gian{% endif %}
+            </button>
+            <ul class="dropdown-menu dropdown-menu-end">
+                <li><a class="dropdown-item {% if not time_filter %}active{% endif %}" href="?time_filter=">Tất cả thời gian</a></li>
+                <li><a class="dropdown-item {% if time_filter == '3m' %}active{% endif %}" href="?time_filter=3m">3 tháng gần nhất</a></li>
+                <li><a class="dropdown-item {% if time_filter == '6m' %}active{% endif %}" href="?time_filter=6m">6 tháng gần nhất</a></li>
+                <li><a class="dropdown-item {% if time_filter == '1y' %}active{% endif %}" href="?time_filter=1y">1 năm gần nhất</a></li>
+            </ul>
+        </div>
+        <a href="{% url 'manage_questions' %}?status=pending" class="btn btn-outline btn-sm">
+            <i class="far fa-clock"></i> Câu chờ trả lời
+        </a>
+        <a href="{% url 'admin_dashboard' %}" class="btn btn-blue btn-sm">
+            <i class="fas fa-arrow-left me-1"></i> Bảng điều khiển
+        </a>
+    </div>
+</div>
+
+{# ─── METRICS ROW ─── #}
+<div class="row g-4 mb-5">
+
+    <div class="col-md-4">
+        <div class="stat">
+            <div class="stat-label"><i class="far fa-comment-dots"></i> Tổng câu hỏi</div>
+            <div class="stat-num">{{ total_questions }}</div>
+            <div class="stat-foot">
+                <span>
+                    {% if time_filter == 'custom' %}Trong {{ time_filter_label }}
+                    {% elif time_filter == '3m' %}Trong 3 tháng qua
+                    {% elif time_filter == '6m' %}Trong 6 tháng qua
+                    {% elif time_filter == '1y' %}Trong 1 năm qua
+                    {% else %}Tích lũy đến hiện tại{% endif %}
+                </span>
+                <a href="{% url 'manage_questions' %}">
+                    Xem ngay <i class="fas fa-arrow-right ms-1"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="stat warn">
+            <div class="stat-label"><i class="far fa-clock"></i> Chờ phản hồi</div>
+            <div class="stat-num" style="color: var(--warning);">{{ pending_questions }}</div>
+            <div class="stat-foot">
+                <span>Cần được xử lý sớm</span>
+                <a href="{% url 'manage_questions' %}?status=pending">
+                    Xem ngay <i class="fas fa-arrow-right ms-1"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="stat success">
+            <div class="stat-label"><i class="fas fa-check-circle"></i> Đã trả lời</div>
+            <div class="stat-num" style="color: var(--success);">{{ answered_questions }}</div>
+            <div class="stat-foot">
+                <span>Đã có câu trả lời chính thức</span>
+                <a href="{% url 'manage_questions' %}?status=answered">
+                    Xem ngay <i class="fas fa-arrow-right ms-1"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+{# ─── CHARTS ROW ─── #}
+<div class="row g-4 mb-5">
+    <div class="col-lg-6">
+        <div class="card h-100">
+            <div class="card-header">
+                <div>
+                    <span class="eyebrow eyebrow-blue">Phân bố trạng thái</span>
+                    <h5 class="mt-2 mb-0">Tỉ lệ câu hỏi theo trạng thái</h5>
+                </div>
+            </div>
+            <div class="card-body" style="padding: var(--sp-6);">
+                <canvas id="questionChart" height="200"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-6">
+        <div class="card h-100">
+            <div class="card-header">
+                <div>
+                    <span class="eyebrow eyebrow-blue">12 tháng gần nhất</span>
+                    <h5 class="mt-2 mb-0">Câu hỏi theo tháng</h5>
+                </div>
+            </div>
+            <div class="card-body" style="padding: var(--sp-6);">
+                <canvas id="monthlyChart" height="200"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+{# ─── DEPARTMENT TABLE (admin only) ─── #}
+{% if user.advisorprofile.role == 'admin' %}
+<div class="row g-4 mb-5">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <div>
+                    <span class="eyebrow eyebrow-blue">Hiệu quả làm việc</span>
+                    <h5 class="mt-2 mb-0">Thống kê theo khoa</h5>
+                </div>
+            </div>
+            <div class="card-body p-0">
+                <table class="table table-hover mb-0">
+                    <thead>
+                        <tr>
+                            <th>Khoa / Đơn vị</th>
+                            <th class="text-center">Tổng câu hỏi</th>
+                            <th class="text-center">Đã trả lời</th>
+                            <th class="text-end">Tỷ lệ</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for dept in departments %}
+                        <tr>
+                            <td><strong>{{ dept.name }}</strong></td>
+                            <td class="text-center">{{ dept.total_questions }}</td>
+                            <td class="text-center">{{ dept.answered_questions }}</td>
+                            <td class="text-end">
+                                <span class="badge {% if dept.response_rate >= 80 %}bg-success{% elif dept.response_rate >= 50 %}bg-warning text-dark{% else %}bg-danger{% endif %}">
+                                    {{ dept.response_rate|floatformat:0 }}%
+                                </span>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr><td colspan="4" class="text-center muted py-4">Chưa có dữ liệu</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+{# ─── POPULAR CATEGORIES ─── #}
+<div class="row g-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <div>
+                    <span class="eyebrow eyebrow-blue">Chủ đề nổi bật</span>
+                    <h5 class="mt-2 mb-0">Top danh mục được hỏi nhiều nhất</h5>
+                </div>
+            </div>
+            <div class="card-body p-0">
+                <table class="table table-hover mb-0">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Danh mục</th>
+                            <th class="text-end">Số câu hỏi</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for cat in popular_categories %}
+                        <tr>
+                            <td class="font-mono muted-2" style="font-size: 12px;">{{ forloop.counter }}</td>
+                            <td><strong>{{ cat.name }}</strong></td>
+                            <td class="text-end">
+                                <span class="badge bg-primary">{{ cat.question_count }}</span>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr><td colspan="3" class="text-center muted py-4">Chưa có dữ liệu</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+{% endblock %}
+
+{# ─── JS CHARTS — phải nằm NGOÀI {% block content %} ─── #}
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+
+    // ─── Chart 1: Bar chart trạng thái ───
+    const ctx1 = document.getElementById('questionChart');
+    if (ctx1) {
+        new Chart(ctx1.getContext('2d'), {
+            type: 'bar',
+            data: {
+                labels: ['Tổng câu hỏi', 'Chờ phản hồi', 'Đã trả lời'],
+                datasets: [{
+                    data: [{{ total_questions }}, {{ pending_questions }}, {{ answered_questions }}],
+                    backgroundColor: ['#0B3F8C', '#B45309', '#1B7F3F'],
+                    borderRadius: 6,
+                    borderSkipped: false,
+                    barThickness: 60,
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        backgroundColor: '#1A1F2E',
+                        titleFont: { family: 'Be Vietnam Pro', size: 13, weight: 700 },
+                        bodyFont:  { family: 'Be Vietnam Pro', size: 13 },
+                        padding: 10,
+                        cornerRadius: 6,
+                    }
+                },
+                scales: {
+                    x: {
+                        grid: { display: false, drawBorder: false },
+                        ticks: { color: '#7A8194', font: { family: 'Be Vietnam Pro', size: 12 } }
+                    },
+                    y: {
+                        beginAtZero: true,
+                        grid: { color: '#E5E7EC', drawBorder: false },
+                        ticks: { color: '#7A8194', font: { family: 'Be Vietnam Pro', size: 12 }, precision: 0 }
+                    }
+                }
+            }
+        });
+    }
+
+    // ─── Chart 2: Stacked bar chart 12 tháng ───
+    const ctx2 = document.getElementById('monthlyChart');
+    if (ctx2) {
+        const monthLabels = [{% for m in monthly_stats %}'{{ m.label }}'{% if not forloop.last %},{% endif %}{% endfor %}];
+        const dataAnswered = [{% for m in monthly_stats %}{{ m.answered }}{% if not forloop.last %},{% endif %}{% endfor %}];
+        const dataPending  = [{% for m in monthly_stats %}{{ m.pending }}{% if not forloop.last %},{% endif %}{% endfor %}];
+
+        new Chart(ctx2.getContext('2d'), {
+            type: 'bar',
+            data: {
+                labels: monthLabels,
+                datasets: [
+                    {
+                        label: 'Đã trả lời',
+                        data: dataAnswered,
+                        backgroundColor: '#1B7F3F',
+                        borderRadius: 4,
+                        borderSkipped: false,
+                    },
+                    {
+                        label: 'Chờ phản hồi',
+                        data: dataPending,
+                        backgroundColor: '#B45309',
+                        borderRadius: 4,
+                        borderSkipped: false,
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                onClick: (e, elements) => {
+                    if (elements.length > 0) {
+                        const index = elements[0].index;
+                        const label = monthLabels[index]; // e.g. "T05/2026"
+                        const parts = label.replace('T', '').split('/');
+                        if (parts.length === 2) {
+                            window.location.href = `?month_filter=${parts[0]}-${parts[1]}`;
+                        }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: { font: { family: 'Be Vietnam Pro', size: 12 }, padding: 14 }
+                    },
+                    tooltip: {
+                        backgroundColor: '#1A1F2E',
+                        titleFont: { family: 'Be Vietnam Pro', size: 13, weight: 700 },
+                        bodyFont:  { family: 'Be Vietnam Pro', size: 13 },
+                        padding: 10,
+                        cornerRadius: 6,
+                        callbacks: {
+                            footer: function (items) {
+                                let total = 0;
+                                items.forEach(it => total += it.parsed.y);
+                                return 'Tổng: ' + total + ' câu';
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        stacked: true,
+                        grid: { display: false, drawBorder: false },
+                        ticks: { color: '#7A8194', font: { family: 'Be Vietnam Pro', size: 11 } }
+                    },
+                    y: {
+                        stacked: true,
+                        beginAtZero: true,
+                        grid: { color: '#E5E7EC', drawBorder: false },
+                        ticks: { color: '#7A8194', font: { family: 'Be Vietnam Pro', size: 11 }, precision: 0 }
+                    }
+                }
+            }
+        });
+    }
+});
+</script>
+{% endblock %}

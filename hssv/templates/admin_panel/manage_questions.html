@@ -1,0 +1,381 @@
+{% extends 'admin_panel/base_admin.html' %}
+{% load widget_tweaks %}
+
+{% block title %}Quản lý câu hỏi - Tư Vấn Sinh Viên{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Highlight câu hỏi pending quá hạn (>SLA giờ chưa được trả lời) */
+    tr.row-overdue {
+        background: #fef2f2 !important;  /* nền đỏ rất nhạt */
+        border-left: 4px solid #dc2626;
+    }
+    tr.row-overdue:hover { background: #fee2e2 !important; }
+    .badge-overdue {
+        background: #dc2626;
+        color: #fff;
+        font-weight: 700;
+        animation: pulse-red 2s infinite;
+    }
+    @keyframes pulse-red {
+        0%, 100% { box-shadow: 0 0 0 0 rgba(220,38,38,0.5); }
+        50% { box-shadow: 0 0 0 6px rgba(220,38,38,0); }
+    }
+
+    /* Tabs visibility (Tất cả / Công khai / Riêng tư) */
+    .vis-tabs {
+        display: flex;
+        gap: 4px;
+        border-bottom: 2px solid var(--border, #e5e7ec);
+        margin-bottom: 18px;
+    }
+    .vis-tab {
+        padding: 10px 22px;
+        background: transparent;
+        border: none;
+        border-bottom: 3px solid transparent;
+        margin-bottom: -2px;
+        font-size: 14px;
+        font-weight: 600;
+        color: var(--text-3, #7a8194);
+        cursor: pointer;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        transition: all .15s;
+    }
+    .vis-tab:hover {
+        color: var(--brand-blue, #0B3F8C);
+        text-decoration: none;
+    }
+    .vis-tab.active {
+        color: var(--brand-blue, #0B3F8C);
+        border-bottom-color: var(--brand-blue, #0B3F8C);
+    }
+    .vis-tab .count-pill {
+        background: #e5e7ec;
+        color: var(--text-2, #4a5165);
+        padding: 1px 9px;
+        border-radius: 999px;
+        font-size: 11px;
+        font-weight: 700;
+        font-family: var(--font-mono, monospace);
+    }
+    .vis-tab.active .count-pill {
+        background: var(--brand-blue, #0B3F8C);
+        color: #fff;
+    }
+
+    /* ─── COMPACT TABLE: cho bảng tự co vừa khung, KHÔNG horizontal scroll ─── */
+    .table-responsive.no-xscroll { overflow-x: visible !important; }
+    .questions-table { table-layout: auto; width: 100%; font-size: 13px; }
+    .questions-table thead th {
+        font-size: 12px;
+        white-space: nowrap;
+        padding: 10px 8px;
+    }
+    .questions-table tbody td {
+        padding: 10px 8px;
+        vertical-align: middle;
+        word-break: break-word;
+    }
+    /* Badge gọn lại: bỏ uppercase, padding nhỏ, font-size 11 */
+    .questions-table .badge {
+        font-size: 10.5px;
+        font-weight: 600;
+        padding: 4px 8px;
+        text-transform: none;
+        letter-spacing: 0;
+        white-space: nowrap;
+    }
+    .questions-table .badge-overdue { font-size: 10px; padding: 3px 7px; }
+
+    /* Cột ID + Ngày tạo + Thao tác: cố định width, ko wrap */
+    .questions-table .col-id      { width: 50px; text-align: center; font-family: var(--font-mono, monospace); color: var(--text-3, #7a8194); }
+    .questions-table .col-date    { width: 100px; font-size: 11.5px; color: var(--text-3, #7a8194); white-space: nowrap; }
+    .questions-table .col-actions { width: 130px; white-space: nowrap; }
+
+    /* Cột tiêu đề: cho phép wrap, link xanh */
+    .questions-table .col-title {
+        min-width: 180px;
+        max-width: 320px;
+    }
+    .questions-table .col-title a {
+        color: var(--brand-blue, #0B3F8C);
+        font-weight: 600;
+        text-decoration: none;
+        line-height: 1.4;
+    }
+    .questions-table .col-title a:hover { text-decoration: underline; }
+
+    .questions-table .col-user {
+        max-width: 140px;
+        font-size: 12.5px;
+        color: var(--text-2, #4A5165);
+        word-break: break-word;
+    }
+    .questions-table .col-cat,
+    .questions-table .col-major {
+        max-width: 130px;
+    }
+
+    /* Nút thao tác nhỏ gọn lại */
+    .questions-table .btn-group .btn { padding: 4px 9px; font-size: 12px; }
+
+    /* Tablet/mobile: ẩn các cột ít quan trọng để tránh overflow */
+    @media (max-width: 1199px) {
+        .questions-table .col-user,
+        .questions-table .col-cat { display: none; }
+        .questions-table .col-user-head,
+        .questions-table .col-cat-head { display: none; }
+    }
+    @media (max-width: 900px) {
+        .questions-table .col-major,
+        .questions-table .col-major-head,
+        .questions-table .col-date,
+        .questions-table .col-date-head { display: none; }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="admin-header">
+    <h2><i class="fas fa-question-circle me-2"></i>Quản lý câu hỏi</h2>
+</div>
+
+{# ─── TABS chia theo visibility (công khai / riêng tư / quá hạn) ─── #}
+<div class="vis-tabs">
+    <a href="?{% if status %}status={{ status }}{% endif %}{% if search_query %}&search={{ search_query }}{% endif %}"
+       class="vis-tab {% if not visibility %}active{% endif %}">
+        <i class="fas fa-list"></i> Tất cả
+        <span class="count-pill">{{ counts.all }}</span>
+    </a>
+    <a href="?visibility=public{% if status %}&status={{ status }}{% endif %}{% if search_query %}&search={{ search_query }}{% endif %}"
+       class="vis-tab {% if visibility == 'public' %}active{% endif %}">
+        <i class="fas fa-globe"></i> Công khai
+        <span class="count-pill">{{ counts.public }}</span>
+    </a>
+    <a href="?visibility=private{% if status %}&status={{ status }}{% endif %}{% if search_query %}&search={{ search_query }}{% endif %}"
+       class="vis-tab {% if visibility == 'private' %}active{% endif %}">
+        <i class="fas fa-lock"></i> Riêng tư
+        <span class="count-pill">{{ counts.private }}</span>
+    </a>
+    <a href="?visibility=overdue{% if status %}&status={{ status }}{% endif %}{% if search_query %}&search={{ search_query }}{% endif %}"
+       class="vis-tab {% if visibility == 'overdue' %}active{% endif %}">
+        <i class="fas fa-fire"></i> Trễ hạn
+        <span class="count-pill">{{ counts.overdue }}</span>
+    </a>
+</div>
+
+{# ─── SLA legend: nhắc tư vấn viên về tiêu chuẩn quá hạn ─── #}
+<div class="alert alert-light border d-flex align-items-center gap-3 mb-3" style="font-size: 13px;">
+    <span class="badge badge-overdue px-2">QUÁ HẠN</span>
+    <span>
+        Câu hỏi <strong>chờ trả lời quá {{ overdue_hours_threshold }} giờ</strong> sẽ được tô đỏ
+        và highlight để xử lý ưu tiên.
+    </span>
+</div>
+
+<div class="card mb-4">
+    <div class="card-header bg-primary text-white">
+        <h5 class="mb-0"><i class="fas fa-search me-2"></i>Tìm kiếm &amp; Lọc câu hỏi</h5>
+    </div>
+    <div class="card-body">
+        <form method="get" class="row g-3 align-items-end">
+            {# Giữ tab visibility hiện tại khi lọc status #}
+            {% if visibility %}<input type="hidden" name="visibility" value="{{ visibility }}">{% endif %}
+            
+            <div class="col-md-6">
+                <label for="search-input" class="form-label">Từ khóa tìm kiếm</label>
+                <div class="input-group">
+                    <span class="input-group-text bg-light text-muted border-end-0"><i class="fas fa-search"></i></span>
+                    <input type="text" name="search" id="search-input" class="form-control border-start-0" 
+                           placeholder="Tìm theo tiêu đề, nội dung, tên người hỏi..." value="{{ search_query|default:'' }}">
+                </div>
+            </div>
+            
+            <div class="col-md-3">
+                <label for="status-filter" class="form-label">Trạng thái</label>
+                <select name="status" id="status-filter" class="form-select">
+                    <option value="">Tất cả</option>
+                    <option value="pending"  {% if status == 'pending' %}selected{% endif %}>Chưa trả lời</option>
+                    <option value="answered" {% if status == 'answered' %}selected{% endif %}>Đã trả lời</option>
+                </select>
+            </div>
+            <div class="col-md-3 d-flex gap-2">
+                <button type="submit" class="btn btn-primary flex-grow-1">
+                    <i class="fas fa-search me-1"></i> Tìm kiếm
+                </button>
+                <a href="?{% if visibility %}visibility={{ visibility }}{% endif %}" class="btn btn-outline-secondary" title="Đặt lại bộ lọc & tìm kiếm">
+                    <i class="fas fa-redo"></i>
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">
+            <i class="fas fa-list me-2"></i>
+            {% if visibility == 'public' %}Câu hỏi công khai
+            {% elif visibility == 'private' %}Câu hỏi riêng tư
+            {% elif visibility == 'overdue' %}Câu hỏi trễ hạn
+            {% else %}Tất cả câu hỏi{% endif %}
+        </h5>
+        <span class="badge bg-light text-dark">Hiển thị: {{ questions|length }}</span>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive no-xscroll">
+            <table class="table table-hover mb-0 questions-table">
+                <thead class="table-primary">
+                    <tr>
+                        <th class="col-id">ID</th>
+                        <th>Tiêu đề</th>
+                        <th class="col-user-head">Người hỏi</th>
+                        <th class="col-cat-head">Danh mục</th>
+                        <th class="col-major-head">Ngành học</th>
+                        <th>Quyền</th>
+                        <th>Trạng thái</th>
+                        <th class="col-date-head">Ngày tạo</th>
+                        <th class="col-actions">Thao tác</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for question in questions %}
+                    {# Highlight đỏ row nếu pending quá SLA (server-side đã set is_overdue) #}
+                    <tr {% if question.is_overdue %}class="row-overdue"{% endif %}>
+                        <td class="col-id">{{ question.id }}</td>
+                        <td class="col-title">
+                            <a href="{% url 'question_detail' question.id %}" target="_blank">
+                                {{ question.title|truncatechars:60 }}
+                            </a>
+                            {% if question.is_overdue %}
+                            <br>
+                            <span class="badge badge-overdue mt-1">
+                                <i class="fas fa-fire me-1"></i> QUÁ HẠN
+                                {% if question.overdue_days >= 1 %}{{ question.overdue_days }} ngày{% else %}{{ question.overdue_hours }} giờ{% endif %}
+                            </span>
+                            {% endif %}
+                        </td>
+                        <td class="col-user">{{ question.user.get_full_name|default:question.user.username }}</td>
+                        <td class="col-cat">
+                            {% if question.category %}
+                            <span class="badge bg-info">{{ question.category.name }}</span>
+                            {% else %}
+                            <span class="text-muted">—</span>
+                            {% endif %}
+                        </td>
+                        <td class="col-major">
+                            {% if question.major %}
+                            <span class="badge bg-secondary">{{ question.major.name }}</span>
+                            {% else %}
+                            <span class="text-muted">—</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if question.is_public %}
+                            <span class="badge bg-success" title="Hiển thị trên trang chủ"><i class="fas fa-globe"></i> Công khai</span>
+                            {% else %}
+                            <span class="badge bg-dark" title="Chỉ owner + tư vấn viên thấy"><i class="fas fa-lock"></i> Riêng tư</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if question.status == 'pending' %}
+                            <span class="badge bg-warning">Chưa trả lời</span>
+                            {% else %}
+                            <span class="badge bg-success">Đã trả lời</span>
+                            {% endif %}
+                        </td>
+                        <td class="col-date">{{ question.created_at|date:"d/m/y H:i" }}</td>
+                        <td class="col-actions">
+                            <div class="btn-group">
+                                <a href="{% url 'answer_question' question.id %}" class="btn btn-sm btn-success" title="Trả lời câu hỏi">
+                                    <i class="fas fa-reply"></i>
+                                </a>
+                                <a href="{% url 'edit_question' question.id %}" class="btn btn-sm btn-warning" title="Chỉnh sửa">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                                <button type="button" class="btn btn-sm btn-danger" data-bs-toggle="modal" data-bs-target="#deleteModal{{ question.id }}" title="Xóa">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                            
+                            <!-- Modal xác nhận xóa -->
+                            <div class="modal fade" id="deleteModal{{ question.id }}" tabindex="-1" aria-hidden="true">
+                                <div class="modal-dialog">
+                                    <div class="modal-content">
+                                        <div class="modal-header bg-danger text-white">
+                                            <h5 class="modal-title">Xác nhận xóa</h5>
+                                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                        </div>
+                                        <div class="modal-body">
+                                            <p>Bạn có chắc chắn muốn xóa câu hỏi "<strong>{{ question.title }}</strong>"?</p>
+                                            <p class="text-danger"><strong>Lưu ý:</strong> Hành động này không thể hoàn tác.</p>
+                                        </div>
+                                        <div class="modal-footer">
+                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                                            <a href="{% url 'delete_question' question.id %}" class="btn btn-danger">Xóa</a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="9" class="text-center py-4">
+                            <div class="alert alert-info mb-0">
+                                <i class="fas fa-info-circle me-2"></i>Không tìm thấy câu hỏi nào phù hợp với tiêu chí tìm kiếm.
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% if is_paginated %}
+    <div class="card-footer">
+        <nav aria-label="Phân trang">
+            <ul class="pagination justify-content-center mb-0">
+                {% if page_obj.has_previous %}
+                <li class="page-item">
+                    <a class="page-link" href="?page=1{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" aria-label="Trang đầu">
+                        <span aria-hidden="true">&laquo;&laquo;</span>
+                    </a>
+                </li>
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" aria-label="Trang trước">
+                        <span aria-hidden="true">&laquo;</span>
+                    </a>
+                </li>
+                {% endif %}
+                
+                {% for num in page_obj.paginator.page_range %}
+                    {% if page_obj.number == num %}
+                    <li class="page-item active"><a class="page-link" href="#">{{ num }}</a></li>
+                    {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                    <li class="page-item"><a class="page-link" href="?page={{ num }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">{{ num }}</a></li>
+                    {% endif %}
+                {% endfor %}
+                
+                {% if page_obj.has_next %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.next_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" aria-label="Trang sau">
+                        <span aria-hidden="true">&raquo;</span>
+                    </a>
+                </li>
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" aria-label="Trang cuối">
+                        <span aria-hidden="true">&raquo;&raquo;</span>
+                    </a>
+                </li>
+                {% endif %}
+            </ul>
+        </nav>
+    </div>
+    {% endif %}
+</div>
+{% endblock %} 

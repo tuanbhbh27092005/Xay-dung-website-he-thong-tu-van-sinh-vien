@@ -1,0 +1,156 @@
+{% extends 'admin_panel/base_admin.html' %}
+
+{% block title %}Tin tức & Bài viết · HCMUTE{% endblock %}
+{% block crumb_section %}Nội dung{% endblock %}
+{% block crumb_page %}Tin tức & Bài viết{% endblock %}
+
+{% block content %}
+
+<div class="page-head">
+    <div>
+        <span class="eyebrow">Nội dung</span>
+        <h1 class="mt-2">Tin tức & Bài viết</h1>
+        <p class="page-sub">Tạo, sửa, xoá các bài viết hiển thị trên trang Tin tức công khai.</p>
+    </div>
+    <a href="{% url 'news:manage_create' %}" class="btn btn-primary">
+        <i class="fas fa-plus"></i> Tạo bài mới
+    </a>
+</div>
+
+{# Search bar #}
+<form method="get" class="mb-4">
+    <div class="d-flex gap-2" style="max-width: 500px;">
+        <input type="text" name="q" value="{{ keyword }}" class="form-control"
+               placeholder="Tìm theo tiêu đề hoặc nội dung...">
+        <button type="submit" class="btn btn-blue"><i class="fas fa-search"></i></button>
+    </div>
+</form>
+
+<div class="card">
+    {% if news_items %}
+    <div class="table-responsive">
+        <table class="table table-hover" style="margin: 0;">
+            <thead>
+                <tr>
+                    <th style="width: 50%;">Tiêu đề</th>
+                    <th>Phân loại</th>
+                    <th>Tác giả</th>
+                    <th class="text-center">Trạng thái</th>
+                    <th class="text-end">Thống kê</th>
+                    <th class="text-end" style="width: 140px;">Hành động</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for n in news_items %}
+                <tr>
+                    <td>
+                        <div style="font-weight: 600; line-height: 1.4;">{{ n.title|truncatechars:80 }}</div>
+                        <div class="muted small mt-1">
+                            <i class="far fa-calendar"></i> {{ n.created_at|date:"d/m/Y H:i" }}
+                            {% if n.department %}· <i class="far fa-building"></i> {{ n.department.name }}{% endif %}
+                        </div>
+                    </td>
+                    <td>
+                        <span class="badge bg-secondary">{{ n.get_category_display }}</span>
+                    </td>
+                    <td>
+                        <div style="font-size: 13px;">{{ n.author.get_full_name|default:n.author.username }}</div>
+                    </td>
+                    <td class="text-center">
+                        {% if n.is_published %}
+                        <span class="badge bg-success">Đã công bố</span>
+                        {% else %}
+                        <span class="badge bg-warning">Nháp</span>
+                        {% endif %}
+                    </td>
+                    <td class="text-end" style="white-space: nowrap;">
+                        <div class="font-mono d-flex align-items-center justify-content-end gap-2" style="font-size: 12px; color: var(--text-3);">
+                            <span><i class="far fa-eye"></i> {{ n.views_count }}</span>
+                            <span class="text-muted">·</span>
+                            <span><i class="far fa-comment"></i> {{ n.comments.count }}</span>
+                        </div>
+                    </td>
+                    <td class="text-end">
+                        <div class="btn-group">
+                            <a href="{{ n.get_absolute_url }}" class="btn btn-sm btn-primary" target="_blank" title="Xem trên trang chủ">
+                                <i class="fas fa-eye"></i>
+                            </a>
+                            {% if user.advisorprofile.role == 'admin' or n.author == user or n.department == user.advisorprofile.department %}
+                            <a href="{% url 'news:manage_edit' n.id %}" class="btn btn-sm btn-warning" title="Chỉnh sửa">
+                                <i class="fas fa-edit"></i>
+                            </a>
+                            {% endif %}
+                            {% if user.advisorprofile.role == 'admin' or n.author == user %}
+                            <button type="button" class="btn btn-sm btn-danger" data-bs-toggle="modal"
+                                    data-bs-target="#deleteNewsModal{{ n.id }}" title="Xoá">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                            {% endif %}
+                        </div>
+
+                        <!-- Modal xác nhận xoá -->
+                        {% if user.advisorprofile.role == 'admin' or n.author == user %}
+                        <div class="modal fade" id="deleteNewsModal{{ n.id }}" tabindex="-1" aria-hidden="true">
+                            <div class="modal-dialog">
+                                <div class="modal-content">
+                                    <div class="modal-header bg-danger text-white">
+                                        <h5 class="modal-title">Xác nhận xoá</h5>
+                                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                    </div>
+                                    <div class="modal-body text-start">
+                                        <p>Bạn có chắc chắn muốn xoá bài viết "<strong>{{ n.title }}</strong>"?</p>
+                                        <p class="text-danger mb-0"><strong>Lưu ý:</strong> Hành động này không thể hoàn tác.</p>
+                                    </div>
+                                    <div class="modal-footer">
+                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Huỷ</button>
+                                        <form method="post" action="{% url 'news:manage_delete' n.id %}" style="display: inline;">
+                                            {% csrf_token %}
+                                            <button type="submit" class="btn btn-danger">Xoá</button>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    {# Pagination #}
+    {% if page.has_other_pages %}
+    <div class="card-footer d-flex justify-content-between align-items-center">
+        <span class="muted small">
+            Hiển thị {{ page.start_index }} – {{ page.end_index }} / {{ page.paginator.count }}
+        </span>
+        <div class="d-flex gap-2">
+            {% if page.has_previous %}
+            <a class="btn btn-light btn-sm" href="?{% if keyword %}q={{ keyword }}&{% endif %}page={{ page.previous_page_number }}">
+                <i class="fas fa-chevron-left"></i>
+            </a>
+            {% endif %}
+            <span class="btn btn-light btn-sm" style="cursor: default;">{{ page.number }} / {{ page.paginator.num_pages }}</span>
+            {% if page.has_next %}
+            <a class="btn btn-light btn-sm" href="?{% if keyword %}q={{ keyword }}&{% endif %}page={{ page.next_page_number }}">
+                <i class="fas fa-chevron-right"></i>
+            </a>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+
+    {% else %}
+    <div class="card-body text-center py-5">
+        <i class="far fa-newspaper" style="font-size: 3rem; color: var(--text-mute); margin-bottom: 16px;"></i>
+        <h4>Chưa có bài viết nào</h4>
+        <p class="muted mb-4">Tạo bài viết đầu tiên để hiển thị trên trang Tin tức.</p>
+        <a href="{% url 'news:manage_create' %}" class="btn btn-primary">
+            <i class="fas fa-plus"></i> Tạo bài mới
+        </a>
+    </div>
+    {% endif %}
+</div>
+
+{% endblock %}

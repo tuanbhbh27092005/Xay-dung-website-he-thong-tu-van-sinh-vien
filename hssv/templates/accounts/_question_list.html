@@ -1,0 +1,55 @@
+{% comment %}
+Partial template để render danh sách câu hỏi của user.
+Được include từ profile.html với biến `items`.
+{% endcomment %}
+
+{% if items %}
+    {% for question in items %}
+    <div class="q-card" style="margin-bottom: var(--sp-3);">
+        <div class="d-flex justify-content-between align-items-start gap-3 mb-2">
+            <a href="{% url 'question_detail' question.id %}" class="q-title" style="flex: 1;">
+                {{ question.title }}
+            </a>
+            <div class="d-flex flex-column gap-1 align-items-end" style="flex-shrink: 0;">
+                {% if question.status == 'pending' %}
+                    <span class="badge bg-warning">Chờ trả lời</span>
+                {% else %}
+                    <span class="badge bg-success">Đã trả lời</span>
+                {% endif %}
+                {% if question.is_public %}
+                    <span class="badge bg-secondary"><i class="fas fa-globe"></i> Công khai</span>
+                {% else %}
+                    <span class="badge bg-info"><i class="fas fa-lock"></i> Riêng tư</span>
+                {% endif %}
+            </div>
+        </div>
+        <p class="q-excerpt" style="margin-bottom: 12px;">
+            {{ question.content|truncatechars:140 }}
+        </p>
+        <div class="q-meta">
+            {% if question.major %}
+                <span><i class="fas fa-graduation-cap"></i>{{ question.major.name }}</span>
+                <span class="dot">·</span>
+            {% endif %}
+            {% if question.category %}
+                <span><i class="fas fa-tag"></i>{{ question.category.name }}</span>
+                <span class="dot">·</span>
+            {% endif %}
+            <span><i class="far fa-calendar"></i>{{ question.created_at|date:"d/m/Y H:i" }}</span>
+            {% if question.answers.count %}
+                <span class="dot">·</span>
+                <span><i class="far fa-comment"></i>{{ question.answers.count }} câu trả lời</span>
+            {% endif %}
+        </div>
+    </div>
+    {% endfor %}
+{% else %}
+    <div class="text-center" style="padding: var(--sp-7) 0;">
+        <i class="far fa-comment-dots" style="font-size: 3rem; color: var(--text-mute); margin-bottom: var(--sp-4);"></i>
+        <h4 style="margin-bottom: 8px;">Chưa có câu hỏi nào</h4>
+        <p class="muted mb-4">Hãy nhắn tin với trợ lý AI để đặt câu hỏi đầu tiên của bạn.</p>
+        <a href="{% url 'chatbot:chat' %}" class="btn btn-primary">
+            <i class="fas fa-robot me-1"></i> Nhắn với trợ lý AI
+        </a>
+    </div>
+{% endif %}

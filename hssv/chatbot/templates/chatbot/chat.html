@@ -1,0 +1,1203 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Trợ lý AI · HCMUTE Tư Vấn Sinh Viên{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* =========================================================
+       CHAT V2 — Modern UI với motion + glassmorphism
+       ========================================================= */
+    :root {
+        --chat-bg: linear-gradient(135deg, #f5f7fb 0%, #eef2f9 100%);
+        --bubble-bot-bg: #ffffff;
+        --bubble-user-bg: linear-gradient(135deg, var(--brand-blue) 0%, var(--brand-blue-deep) 100%);
+    }
+
+    .chat-wrapper {
+        max-width: 920px;
+        margin: 24px auto;
+        padding: 0 12px;
+        animation: fadeInUp .5s ease-out;
+    }
+
+    @keyframes fadeInUp {
+        from { opacity: 0; transform: translateY(20px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    .chat-shell {
+        background: var(--chat-bg);
+        border: 1px solid var(--border);
+        border-radius: 20px;
+        overflow: hidden;
+        box-shadow: 0 12px 40px rgba(11, 63, 140, 0.08), 0 2px 6px rgba(0,0,0,0.04);
+        display: flex;
+        flex-direction: column;
+        height: calc(100vh - 180px);
+        min-height: 600px;
+        position: relative;
+    }
+
+    /* === HEADER === */
+    .chat-head {
+        background: linear-gradient(135deg, #0B3F8C 0%, #062B62 60%, #0B3F8C 100%);
+        background-size: 200% 200%;
+        animation: gradientShift 10s ease infinite;
+        color: #fff;
+        padding: 18px 26px;
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        position: relative;
+        overflow: hidden;
+    }
+    @keyframes gradientShift {
+        0%, 100% { background-position: 0% 50%; }
+        50% { background-position: 100% 50%; }
+    }
+    .chat-head::after {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background: radial-gradient(circle at 20% 50%, rgba(218, 37, 29, 0.18), transparent 50%);
+        pointer-events: none;
+    }
+
+    /* === BOT AVATAR (logo-based with motion) === */
+    .bot-avatar {
+        width: 52px; height: 52px;
+        border-radius: 50%;
+        background: #fff;
+        position: relative;
+        display: inline-flex;
+        align-items: center; justify-content: center;
+        flex-shrink: 0;
+        box-shadow: 0 4px 14px rgba(218, 37, 29, 0.4);
+        animation: botFloat 3.5s ease-in-out infinite;
+        overflow: hidden;
+    }
+    .bot-avatar::before {
+        content: '';
+        position: absolute;
+        inset: -3px;
+        border-radius: 50%;
+        background: var(--brand-red);
+        opacity: 0.35;
+        animation: pulseRing 2.4s ease-out infinite;
+        z-index: 0;
+    }
+    .bot-avatar img {
+        width: 100%; height: 100%;
+        object-fit: cover;
+        border-radius: 50%;
+        z-index: 1;
+        position: relative;
+    }
+
+    @keyframes botFloat {
+        0%, 100% { transform: translateY(0); }
+        50% { transform: translateY(-4px); }
+    }
+    @keyframes pulseRing {
+        0% { transform: scale(1); opacity: 0.45; }
+        100% { transform: scale(1.5); opacity: 0; }
+    }
+
+    .chat-head .head-text { z-index: 1; }
+    .chat-head .head-text h5 {
+        margin: 0;
+        color: #fff;
+        font-weight: 700;
+        font-size: 17px;
+        letter-spacing: -0.01em;
+    }
+    .chat-head .head-text small {
+        color: rgba(255,255,255,0.78);
+        font-size: 12px;
+    }
+    .chat-head .head-text .live-dot {
+        display: inline-block;
+        width: 7px; height: 7px;
+        border-radius: 50%;
+        background: #6ee7b7;
+        margin-right: 5px;
+        animation: liveBlink 1.6s ease infinite;
+    }
+    @keyframes liveBlink {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.4; }
+    }
+
+    .chat-head .head-actions {
+        margin-left: auto;
+        display: flex; gap: 8px;
+        z-index: 1;
+    }
+    .head-btn {
+        background: rgba(255,255,255,0.14);
+        color: #fff;
+        border: 1px solid rgba(255,255,255,0.18);
+        border-radius: 8px;
+        padding: 8px 14px;
+        font-size: 12px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all .2s;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+    }
+    .head-btn:hover {
+        background: rgba(255,255,255,0.24);
+        transform: translateY(-1px);
+        color: #fff;
+        text-decoration: none;
+    }
+    .head-btn i { font-size: 11px; }
+
+    /* === BODY === */
+    .chat-body {
+        flex: 1;
+        overflow-y: auto;
+        padding: 26px;
+        scroll-behavior: smooth;
+    }
+    .chat-body::-webkit-scrollbar { width: 8px; }
+    .chat-body::-webkit-scrollbar-thumb {
+        background: rgba(11, 63, 140, 0.15);
+        border-radius: 8px;
+    }
+    .chat-body::-webkit-scrollbar-thumb:hover { background: rgba(11, 63, 140, 0.3); }
+
+    /* === MESSAGES === */
+    .msg {
+        display: flex;
+        margin-bottom: 16px;
+        align-items: flex-start;
+        gap: 10px;
+        animation: msgIn .35s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    @keyframes msgIn {
+        from { opacity: 0; transform: translateY(12px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    .msg.user { justify-content: flex-end; }
+    .msg .avatar-sm {
+        width: 34px; height: 34px;
+        border-radius: 50%;
+        display: inline-flex; align-items: center; justify-content: center;
+        font-size: 13px; flex-shrink: 0; font-weight: 700;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+    }
+    .msg.bot .avatar-sm {
+        background: #fff;
+        color: #fff;
+        position: relative;
+        overflow: hidden;
+        border: 1px solid var(--border);
+    }
+    .msg.bot .avatar-sm img {
+        width: 100%; height: 100%;
+        object-fit: cover;
+        border-radius: 50%;
+    }
+    .msg.user .avatar-sm {
+        background: linear-gradient(135deg, var(--text), var(--text-2));
+        color: #fff;
+        order: 2;
+    }
+
+    .msg .body { max-width: 76%; }
+    .msg .bubble {
+        padding: 13px 17px;
+        border-radius: 16px;
+        word-wrap: break-word;
+        white-space: pre-wrap;
+        line-height: 1.6;
+        font-size: 14.5px;
+        position: relative;
+    }
+    .msg.user .bubble {
+        background: var(--bubble-user-bg);
+        color: #fff;
+        border-bottom-right-radius: 4px;
+        box-shadow: 0 4px 14px rgba(11, 63, 140, 0.22);
+    }
+    .msg.bot .bubble {
+        background: var(--bubble-bot-bg);
+        border: 1px solid var(--border);
+        color: var(--text);
+        border-bottom-left-radius: 4px;
+        box-shadow: 0 2px 8px rgba(15, 42, 82, 0.04);
+    }
+
+    /* === BUTTONS === */
+    .msg-interactive { animation: msgIn .4s cubic-bezier(0.16, 1, 0.3, 1); }
+
+    .opt-buttons {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin: 10px 0 14px 44px;
+    }
+    .opt-btn {
+        background: #ffffff;
+        border: 1.5px solid var(--border-2);
+        color: var(--text);
+        padding: 9px 18px;
+        border-radius: 999px;
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all .18s ease;
+        position: relative;
+        overflow: hidden;
+    }
+    .opt-btn::before {
+        content: '';
+        position: absolute;
+        top: 50%; left: 50%;
+        width: 0; height: 0;
+        background: var(--brand-red-soft);
+        border-radius: 50%;
+        transform: translate(-50%, -50%);
+        transition: width .35s, height .35s;
+        z-index: 0;
+    }
+    .opt-btn:hover::before { width: 250%; height: 250%; }
+    .opt-btn:hover {
+        border-color: var(--brand-red);
+        color: var(--brand-red);
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(218, 37, 29, 0.18);
+    }
+    .opt-btn:active { transform: translateY(0); }
+    .opt-btn span { position: relative; z-index: 1; }
+    .opt-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+    /* === QA RESULT CARDS === */
+    .qa-list { margin: 8px 0 18px 44px; }
+    .qa-card {
+        background: #fff;
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        padding: 18px;
+        margin-bottom: 12px;
+        transition: all .2s ease;
+        position: relative;
+        overflow: hidden;
+    }
+    .qa-card::before {
+        content: '';
+        position: absolute;
+        left: 0; top: 0; bottom: 0;
+        width: 3px;
+        background: linear-gradient(180deg, var(--brand-blue), var(--brand-red));
+        transform: scaleY(0);
+        transform-origin: top;
+        transition: transform .3s;
+    }
+    .qa-card:hover {
+        border-color: var(--brand-blue);
+        box-shadow: 0 8px 24px rgba(11, 63, 140, 0.12);
+        transform: translateY(-2px);
+    }
+    .qa-card:hover::before { transform: scaleY(1); }
+
+    .qa-card .qa-title {
+        font-weight: 700;
+        color: var(--text);
+        margin-bottom: 8px;
+        font-size: 14.5px;
+        line-height: 1.4;
+    }
+    .qa-card .qa-content {
+        color: var(--text-3);
+        font-size: 13px;
+        margin-bottom: 12px;
+        line-height: 1.55;
+    }
+    .qa-card .qa-answer {
+        background: linear-gradient(135deg, var(--brand-blue-soft) 0%, #f1f5fc 100%);
+        border-left: 3px solid var(--brand-blue);
+        padding: 11px 14px;
+        border-radius: 6px;
+        font-size: 13px;
+        color: var(--text-2);
+        line-height: 1.65;
+        margin-bottom: 10px;
+    }
+    .qa-card .qa-meta {
+        display: flex;
+        gap: 10px;
+        font-size: 11.5px;
+        color: var(--text-3);
+        flex-wrap: wrap;
+        align-items: center;
+    }
+    .qa-card .qa-meta .sim {
+        background: linear-gradient(135deg, var(--success-soft), #dcf2e1);
+        color: var(--success);
+        padding: 3px 10px;
+        border-radius: 999px;
+        font-weight: 700;
+        font-family: var(--font-mono);
+        font-size: 11px;
+    }
+    .qa-card .qa-link {
+        color: var(--brand-red);
+        font-weight: 700;
+        margin-left: auto;
+        transition: all .15s;
+    }
+    .qa-card .qa-link:hover { color: var(--brand-red-deep); text-decoration: none; transform: translateX(2px); }
+
+    /* === NEWS RESULT CARDS === */
+    .news-list { margin: 6px 0 18px 44px; }
+    .news-card {
+        background: #fff;
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        padding: 14px;
+        margin-bottom: 10px;
+        display: flex;
+        gap: 14px;
+        align-items: stretch;
+        transition: all .2s ease;
+        text-decoration: none;
+        color: inherit;
+    }
+    .news-card:hover {
+        border-color: var(--brand-red);
+        box-shadow: 0 8px 24px rgba(218, 37, 29, 0.12);
+        transform: translateY(-2px);
+        text-decoration: none;
+        color: inherit;
+    }
+    .news-card .news-thumb {
+        width: 90px; height: 90px;
+        border-radius: 10px;
+        background: linear-gradient(135deg, var(--brand-blue-soft), var(--brand-red-soft));
+        flex-shrink: 0;
+        background-size: cover;
+        background-position: center;
+        display: flex; align-items: center; justify-content: center;
+        color: var(--brand-blue);
+        font-size: 24px;
+    }
+    .news-card .news-body { flex: 1; min-width: 0; }
+    .news-card .news-cat {
+        display: inline-block;
+        font-size: 11px;
+        font-weight: 700;
+        color: var(--brand-red);
+        background: var(--brand-red-soft);
+        padding: 2px 9px;
+        border-radius: 999px;
+        margin-bottom: 6px;
+    }
+    .news-card .news-title {
+        font-weight: 700;
+        color: var(--text);
+        font-size: 14px;
+        margin-bottom: 6px;
+        line-height: 1.4;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
+    .news-card .news-sum {
+        font-size: 12.5px;
+        color: var(--text-3);
+        line-height: 1.5;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+        margin-bottom: 6px;
+    }
+    .news-card .news-meta {
+        font-size: 11px;
+        color: var(--text-mute);
+        display: flex; gap: 10px; flex-wrap: wrap;
+    }
+
+    /* === ESCALATION FORM === */
+    .esc-form {
+        margin: 8px 0 18px 44px;
+        background: #fff;
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        padding: 20px;
+        box-shadow: 0 4px 16px rgba(15, 42, 82, 0.06);
+    }
+    .esc-form h6 {
+        margin: 0 0 14px;
+        font-weight: 700;
+        font-size: 15px;
+        color: var(--brand-blue);
+    }
+    .esc-preview {
+        background: var(--bg-soft);
+        border-left: 3px solid var(--brand-blue);
+        padding: 11px 14px;
+        border-radius: 6px;
+        font-size: 13px;
+        color: var(--text-2);
+        margin-bottom: 14px;
+        max-height: 100px;
+        overflow-y: auto;
+        line-height: 1.55;
+    }
+    .esc-form .esc-row { margin-bottom: 14px; }
+    .esc-form input[type="text"] {
+        width: 100%;
+        padding: 10px 14px;
+        border: 1.5px solid var(--border-2);
+        border-radius: 8px;
+        font-size: 13px;
+        font-family: var(--font-sans);
+        transition: all .15s;
+    }
+    .esc-form input[type="text"]:focus {
+        outline: none;
+        border-color: var(--brand-red);
+        box-shadow: 0 0 0 3px var(--brand-red-soft);
+    }
+    .esc-form .visibility-row {
+        display: flex;
+        gap: 10px;
+        margin-top: 8px;
+    }
+    .esc-form .vis-option {
+        flex: 1;
+        padding: 12px 14px;
+        border: 2px solid var(--border-2);
+        border-radius: 10px;
+        cursor: pointer;
+        transition: all .18s;
+        font-size: 12.5px;
+    }
+    .esc-form .vis-option strong {
+        display: block;
+        font-size: 13px;
+        font-weight: 700;
+        color: var(--text);
+        margin-bottom: 3px;
+    }
+    .esc-form .vis-option.selected {
+        border-color: var(--brand-red);
+        background: var(--brand-red-soft);
+        box-shadow: 0 4px 12px rgba(218, 37, 29, 0.15);
+    }
+    .esc-form .vis-option.selected strong { color: var(--brand-red); }
+    .esc-form .vis-option .vis-desc { color: var(--text-3); }
+    .esc-form .esc-actions { display: flex; gap: 8px; margin-top: 16px; }
+
+    /* === TYPING INDICATOR === */
+    #typing-indicator { display: none; margin-bottom: 14px; }
+    #typing-indicator.show { display: flex; }
+    #typing-indicator .bubble {
+        padding: 14px 18px;
+        background: #fff;
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        border-bottom-left-radius: 4px;
+        display: inline-flex;
+        align-items: center;
+    }
+    #typing-indicator .dots span {
+        display: inline-block;
+        width: 8px; height: 8px;
+        border-radius: 50%;
+        background: var(--brand-blue);
+        margin: 0 3px;
+        animation: typingBounce 1.3s infinite ease-in-out both;
+    }
+    #typing-indicator .dots span:nth-child(1) { animation-delay: -0.32s; }
+    #typing-indicator .dots span:nth-child(2) { animation-delay: -0.16s; }
+    @keyframes typingBounce {
+        0%, 80%, 100% { transform: scale(0.4); opacity: 0.4; }
+        40% { transform: scale(1); opacity: 1; }
+    }
+
+    /* === FILTER TOOLBAR === */
+    .chat-filters {
+        background: var(--bg-soft);
+        border-top: 1px solid var(--border);
+        padding: 12px 20px;
+        display: flex;
+        gap: 10px;
+        align-items: center;
+        flex-wrap: wrap;
+        font-size: 13px;
+    }
+    .chat-filters .filter-label {
+        font-weight: 600;
+        color: var(--text-2);
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+    }
+    .chat-filters .filter-label i { color: var(--brand-blue); }
+    .chat-filters select {
+        padding: 6px 10px;
+        border: 1.5px solid var(--border-2);
+        border-radius: 8px;
+        background: #fff;
+        font-size: 13px;
+        font-family: var(--font-sans);
+        color: var(--text);
+        min-width: 130px;
+        max-width: 200px;
+        cursor: pointer;
+        transition: all .15s;
+    }
+    .chat-filters select:hover { border-color: var(--brand-blue); }
+    .chat-filters select:focus {
+        outline: none;
+        border-color: var(--brand-blue);
+        box-shadow: 0 0 0 3px var(--brand-blue-soft);
+    }
+    .chat-filters .filter-clear {
+        background: transparent;
+        border: 1px solid var(--border-2);
+        color: var(--text-3);
+        padding: 5px 10px;
+        border-radius: 6px;
+        font-size: 12px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all .15s;
+    }
+    .chat-filters .filter-clear:hover {
+        border-color: var(--brand-red);
+        color: var(--brand-red);
+    }
+    .chat-filters .filter-applied {
+        font-size: 11px;
+        color: var(--success);
+        font-weight: 700;
+        margin-left: auto;
+        display: none;
+    }
+    .chat-filters.has-filters .filter-applied { display: inline-flex; align-items: center; gap: 4px; }
+
+    @media (max-width: 640px) {
+        .chat-filters { padding: 10px 12px; gap: 6px; }
+        .chat-filters select { min-width: 100px; flex: 1; font-size: 12px; }
+        .chat-filters .filter-label { font-size: 12px; }
+    }
+
+    /* === INPUT === */
+    .chat-input {
+        padding: 16px 24px 18px;
+        background: #fff;
+        border-top: 1px solid var(--border);
+    }
+    .chat-input form {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+        background: var(--bg-soft);
+        border-radius: 999px;
+        padding: 4px 4px 4px 18px;
+        border: 1.5px solid transparent;
+        transition: all .15s;
+    }
+    .chat-input form:focus-within {
+        background: #fff;
+        border-color: var(--brand-blue);
+        box-shadow: 0 0 0 4px var(--brand-blue-soft);
+    }
+    .chat-input input.form-control {
+        flex: 1;
+        background: transparent;
+        border: none;
+        font-size: 14.5px;
+        padding: 10px 0;
+        outline: none;
+        box-shadow: none;
+    }
+    .chat-input input.form-control:focus {
+        background: transparent;
+        box-shadow: none;
+    }
+    #btn-send {
+        width: 42px; height: 42px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, var(--brand-red), var(--brand-red-deep));
+        color: #fff;
+        border: none;
+        display: inline-flex;
+        align-items: center; justify-content: center;
+        cursor: pointer;
+        transition: all .2s;
+        flex-shrink: 0;
+    }
+    #btn-send:hover:not(:disabled) {
+        transform: scale(1.05) rotate(-8deg);
+        box-shadow: 0 4px 14px rgba(218, 37, 29, 0.4);
+    }
+    #btn-send:disabled { opacity: 0.5; cursor: not-allowed; }
+    .chat-input small {
+        display: block;
+        margin-top: 10px;
+        color: var(--text-3);
+        font-size: 11.5px;
+        text-align: center;
+    }
+
+    /* Responsive */
+    @media (max-width: 640px) {
+        .chat-wrapper { padding: 0; }
+        .chat-shell { border-radius: 0; height: calc(100vh - 130px); }
+        .qa-list, .opt-buttons, .news-list, .esc-form { margin-left: 0; }
+        .msg .body { max-width: 88%; }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="chat-wrapper">
+    <div class="chat-shell">
+
+        {# ─── HEADER ─── #}
+        <div class="chat-head">
+            <div class="bot-avatar" title="Trợ lý AI đang sẵn sàng">
+                <img src="{% static 'img/chatbot-logo.png' %}" alt="Chatbot HCMUTE">
+            </div>
+            <div class="head-text">
+                <h5>Trợ lý AI HCMUTE</h5>
+                <small><span class="live-dot"></span> Sẵn sàng tư vấn 24/7 · Trả lời từ Q&amp;A + Tin tức</small>
+            </div>
+            <div class="head-actions">
+                <button type="button" id="btn-reset" class="head-btn" title="Xoá lịch sử và bắt đầu mới">
+                    <i class="fas fa-redo"></i> <span class="d-none d-md-inline">Bắt đầu mới</span>
+                </button>
+                <a href="{% url 'chatbot:history' %}" class="head-btn" title="Xem lịch sử chat">
+                    <i class="far fa-clock"></i> <span class="d-none d-md-inline">Lịch sử</span>
+                </a>
+            </div>
+        </div>
+
+        {# ─── BODY ─── #}
+        <div class="chat-body" id="chat-body">
+            {% for msg in history %}
+                <div class="msg {{ msg.role }}" data-msg-id="{{ msg.id }}">
+                    {% if msg.role == 'bot' %}
+                    <div class="avatar-sm">
+                        <img src="{% static 'img/chatbot-logo.png' %}" alt="Bot">
+                    </div>
+                    {% endif %}
+                    <div class="body">
+                        {% if msg.content %}
+                        <div class="bubble">{{ msg.content }}</div>
+                        {% endif %}
+                    </div>
+                    {% if msg.role == 'user' %}
+                    <div class="avatar-sm">{{ user.first_name.0|default:user.username.0|default:'U'|upper }}</div>
+                    {% endif %}
+                </div>
+
+                {# Render interactive container cho MỖI bot message có metadata #}
+                {% if msg.role == 'bot' and msg.metadata %}
+                <div class="msg-interactive" data-msg-id="{{ msg.id }}"></div>
+                <script type="application/json" class="initial-interactive-json" data-msg-id="{{ msg.id }}">{{ msg.metadata|safe }}</script>
+                {% endif %}
+            {% endfor %}
+
+            {# Typing indicator #}
+            <div id="typing-indicator" class="msg bot">
+                <div class="avatar-sm">
+                    <img src="{% static 'img/chatbot-logo.png' %}" alt="Bot">
+                </div>
+                <div class="body">
+                    <div class="bubble">
+                        <span class="dots"><span></span><span></span><span></span></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {# ─── FILTER TOOLBAR ─── #}
+        <div class="chat-filters" id="chat-filters">
+            <span class="filter-label"><i class="fas fa-bullseye"></i> Phạm vi:</span>
+
+            <select id="filter-dept" title="Chọn khoa/đơn vị">
+                <option value="">Tất cả khoa</option>
+            </select>
+
+            <select id="filter-major" title="Chọn ngành học">
+                <option value="">Tất cả ngành</option>
+            </select>
+
+            <select id="filter-category" title="Chọn loại câu hỏi">
+                <option value="">Tất cả loại</option>
+            </select>
+
+            <button type="button" id="filter-clear" class="filter-clear" title="Bỏ tất cả phạm vi">
+                <i class="fas fa-times"></i> Bỏ lọc
+            </button>
+
+            <span class="filter-applied"><i class="fas fa-check-circle"></i> Đã áp dụng</span>
+        </div>
+
+        {# ─── INPUT ─── #}
+        <div class="chat-input">
+            <form id="chat-form">
+                {% csrf_token %}
+                <input id="chat-text" type="text" class="form-control"
+                       placeholder="Hỏi tôi bất cứ điều gì về HCMUTE..."
+                       autocomplete="off" maxlength="2000">
+                <button type="submit" id="btn-send" title="Gửi">
+                    <i class="fas fa-paper-plane"></i>
+                </button>
+            </form>
+            {% if not user.is_authenticated %}
+            <small>
+                <i class="fas fa-lock"></i> <a href="{% url 'login' %}">Đăng nhập</a> để chat với trợ lý AI.
+            </small>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<script>
+(function () {
+    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+    const apiSend     = "{% url 'chatbot:send_message' %}";
+    const apiReset    = "{% url 'chatbot:reset_session' %}";
+    const apiFilters  = "{% url 'chatbot:filter_options' %}";
+    const userInitial = "{{ user.first_name.0|default:user.username.0|default:'U'|upper|escapejs }}";
+
+    const BOT_LOGO_URL = "{% static 'img/chatbot-logo.png' %}";
+    const BOT_SVG = `<img src="${BOT_LOGO_URL}" alt="Bot">`;
+
+    const $body     = document.getElementById('chat-body');
+    const $form     = document.getElementById('chat-form');
+    const $input    = document.getElementById('chat-text');
+    const $send     = document.getElementById('btn-send');
+    const $typing   = document.getElementById('typing-indicator');
+    const $reset    = document.getElementById('btn-reset');
+    const $filters  = document.getElementById('chat-filters');
+    const $fDept    = document.getElementById('filter-dept');
+    const $fMajor   = document.getElementById('filter-major');
+    const $fCat     = document.getElementById('filter-category');
+    const $fClear   = document.getElementById('filter-clear');
+
+    // Cache cho danh sách (load 1 lần)
+    let _allMajors = [];
+
+    /* ---------- helpers ---------- */
+    function escapeHtml(s) {
+        const div = document.createElement('div');
+        div.textContent = s == null ? '' : String(s);
+        return div.innerHTML;
+    }
+
+    function isControlType(t) {
+        return t === 'buttons' || t === 'escalation_form';
+    }
+
+    function isDisplayType(t) {
+        return t === 'qa_results' || t === 'news_results';
+    }
+
+    function removeOldControls() {
+        $body.querySelectorAll('.msg-interactive').forEach(c => {
+            if (isControlType(c.dataset.interactiveType)) c.remove();
+        });
+    }
+
+    function appendBubble(msg) {
+        if (!msg.content) return null;
+        const wrap = document.createElement('div');
+        wrap.className = 'msg ' + msg.role;
+        wrap.dataset.msgId = msg.id;
+
+        const avatar = document.createElement('div');
+        avatar.className = 'avatar-sm';
+        avatar.innerHTML = msg.role === 'user' ? userInitial : BOT_SVG;
+
+        const body = document.createElement('div');
+        body.className = 'body';
+        const bubble = document.createElement('div');
+        bubble.className = 'bubble';
+        bubble.textContent = msg.content;
+        body.appendChild(bubble);
+
+        if (msg.role === 'user') {
+            wrap.appendChild(body);
+            wrap.appendChild(avatar);
+        } else {
+            wrap.appendChild(avatar);
+            wrap.appendChild(body);
+        }
+        $body.insertBefore(wrap, $typing);
+        return wrap;
+    }
+
+    function appendInteractive(metadata, msgId) {
+        if (!metadata || !metadata.type) return;
+
+        if (metadata.type === 'system_action') {
+            if (metadata.action === 'auto_search') send({action: 'skip_category', value: 0});
+            return;
+        }
+
+        let container = $body.querySelector(`.msg-interactive[data-msg-id="${msgId}"]`);
+        const isNew = !container;
+        if (isNew) {
+            container = document.createElement('div');
+            container.className = 'msg-interactive';
+            container.dataset.msgId = msgId;
+        } else {
+            container.innerHTML = '';
+        }
+        container.dataset.interactiveType = metadata.type;
+
+        if (metadata.type === 'buttons')         renderButtons(container, metadata.options || []);
+        else if (metadata.type === 'qa_results') renderQAResults(container, metadata.results || []);
+        else if (metadata.type === 'news_results') renderNewsResults(container, metadata.results || []);
+        else if (metadata.type === 'escalation_form') renderEscalationForm(container, metadata);
+
+        if (isNew) $body.insertBefore(container, $typing);
+    }
+
+    /* ---------- Renderers ---------- */
+    function renderButtons(container, options) {
+        const wrap = document.createElement('div');
+        wrap.className = 'opt-buttons';
+        options.forEach(opt => {
+            const btn = document.createElement('button');
+            btn.className = 'opt-btn';
+            btn.innerHTML = `<span>${escapeHtml(opt.label)}</span>`;
+            btn.addEventListener('click', () => {
+                wrap.querySelectorAll('button').forEach(el => el.disabled = true);
+                wrap.style.opacity = '0.55';
+                wrap.style.pointerEvents = 'none';
+                send({action: opt.action, value: opt.value});
+            });
+            wrap.appendChild(btn);
+        });
+        container.appendChild(wrap);
+    }
+
+    function renderQAResults(container, results) {
+        const wrap = document.createElement('div');
+        wrap.className = 'qa-list';
+        results.forEach(qa => {
+            const card = document.createElement('div');
+            card.className = 'qa-card';
+            const metaPieces = [`<span class="sim"><i class="fas fa-bullseye"></i> ${qa.similarity}</span>`];
+            if (qa.department) metaPieces.push(`<span><i class="fas fa-building"></i> ${escapeHtml(qa.department)}</span>`);
+            if (qa.major)      metaPieces.push(`<span><i class="fas fa-graduation-cap"></i> ${escapeHtml(qa.major)}</span>`);
+            if (qa.category)   metaPieces.push(`<span><i class="fas fa-tag"></i> ${escapeHtml(qa.category)}</span>`);
+            metaPieces.push(`<a href="${qa.detail_url}" target="_blank" class="qa-link">Chi tiết →</a>`);
+
+            card.innerHTML = `
+                <div class="qa-title">${escapeHtml(qa.title)}</div>
+                <div class="qa-content">${escapeHtml(qa.content)}</div>
+                <div class="qa-answer"><strong>💡 Trả lời:</strong> ${escapeHtml(qa.answer)}</div>
+                <div class="qa-meta">${metaPieces.join('')}</div>
+            `;
+            wrap.appendChild(card);
+        });
+        container.appendChild(wrap);
+    }
+
+    function renderNewsResults(container, results) {
+        const wrap = document.createElement('div');
+        wrap.className = 'news-list';
+        results.forEach(n => {
+            const a = document.createElement('a');
+            a.className = 'news-card';
+            a.href = n.detail_url;
+            a.target = '_blank';
+
+            const thumbStyle = n.thumbnail_url
+                ? `background-image: url('${escapeHtml(n.thumbnail_url)}'); color: transparent;`
+                : '';
+            a.innerHTML = `
+                <div class="news-thumb" style="${thumbStyle}">
+                    ${n.thumbnail_url ? '' : '<i class="far fa-newspaper"></i>'}
+                </div>
+                <div class="news-body">
+                    <span class="news-cat">${escapeHtml(n.category)}</span>
+                    <div class="news-title">${escapeHtml(n.title)}</div>
+                    <div class="news-sum">${escapeHtml(n.summary)}</div>
+                    <div class="news-meta">
+                        ${n.department ? `<span><i class="fas fa-building"></i> ${escapeHtml(n.department)}</span>` : ''}
+                        <span><i class="far fa-calendar"></i> ${escapeHtml(n.created_at)}</span>
+                        <span><i class="fas fa-bullseye"></i> ${n.similarity}</span>
+                    </div>
+                </div>
+            `;
+            wrap.appendChild(a);
+        });
+        container.appendChild(wrap);
+    }
+
+    function renderEscalationForm(container, meta) {
+        const preview = meta.preview_question || '';
+        container.innerHTML = `
+            <div class="esc-form">
+                <h6><i class="fas fa-paper-plane"></i> Gửi câu hỏi tới tư vấn viên</h6>
+
+                <div class="esc-row">
+                    <label class="form-label">Tiêu đề (tự động, có thể sửa):</label>
+                    <input type="text" id="esc-title" maxlength="180"
+                           value="${escapeHtml(preview.substring(0, 100))}">
+                </div>
+
+                <div class="esc-row">
+                    <label class="form-label">Câu hỏi của bạn:</label>
+                    <textarea id="esc-content" class="form-control" rows="4" style="font-size: 13px; border: 1.5px solid var(--border-2); border-radius: 8px; padding: 10px 14px; width: 100%; transition: all .15s;">${escapeHtml(preview)}</textarea>
+                </div>
+
+                <div class="esc-row">
+                    <label class="form-label">Quyền riêng tư:</label>
+                    <div class="visibility-row">
+                        <div class="vis-option selected" data-public="true">
+                            <strong>🌐 Công khai</strong>
+                            <span class="vis-desc">Mọi người xem được, chatbot có thể dùng làm tham khảo.</span>
+                        </div>
+                        <div class="vis-option" data-public="false">
+                            <strong>🔒 Riêng tư</strong>
+                            <span class="vis-desc">Chỉ bạn và tư vấn viên thấy được.</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="esc-actions">
+                    <button class="btn btn-primary btn-sm" id="esc-submit">
+                        <i class="fas fa-paper-plane"></i> Gửi tới tư vấn viên
+                    </button>
+                    <button class="btn btn-light btn-sm" id="esc-cancel">Huỷ</button>
+                </div>
+            </div>
+        `;
+
+        container.querySelectorAll('.vis-option').forEach(el => {
+            el.addEventListener('click', () => {
+                container.querySelectorAll('.vis-option').forEach(x => x.classList.remove('selected'));
+                el.classList.add('selected');
+            });
+        });
+
+        container.querySelector('#esc-submit').addEventListener('click', () => {
+            const title = container.querySelector('#esc-title').value.trim();
+            const content = container.querySelector('#esc-content').value.trim();
+            const isPublic = container.querySelector('.vis-option.selected').dataset.public === 'true';
+            container.style.opacity = '0.55';
+            container.style.pointerEvents = 'none';
+            send({action: 'submit_escalation', value: {is_public: isPublic, title: title, content: content}});
+        });
+        container.querySelector('#esc-cancel').addEventListener('click', () => {
+            container.style.opacity = '0.55';
+            container.style.pointerEvents = 'none';
+            send({action: 'cancel_escalation'});
+        });
+    }
+
+    /* ---------- Network ---------- */
+    function setTyping(on) {
+        $typing.classList.toggle('show', on);
+        if (on) scrollToBottom();
+    }
+    function scrollToBottom() {
+        requestAnimationFrame(() => { $body.scrollTop = $body.scrollHeight; });
+    }
+
+    async function send(payload) {
+        setTyping(true);
+        $send.disabled = true;
+        try {
+            const res = await fetch(apiSend, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json', 'X-CSRFToken': csrfToken},
+                body: JSON.stringify(payload),
+            });
+            const data = await res.json();
+            setTyping(false);
+
+            if (!res.ok) {
+                appendBubble({role: 'bot', content: 'Lỗi: ' + (data.error || 'Không kết nối được máy chủ')});
+                return;
+            }
+            removeOldControls();
+            (data.messages || []).forEach(m => {
+                appendBubble(m);
+                if (m.role === 'bot' && m.metadata) appendInteractive(m.metadata, m.id);
+            });
+            scrollToBottom();
+        } catch (err) {
+            setTyping(false);
+            appendBubble({role: 'bot', content: 'Lỗi kết nối: ' + err.message});
+        } finally {
+            $send.disabled = false;
+            $input.focus();
+        }
+    }
+
+    /* ---------- Wire up form + reset ---------- */
+    $form.addEventListener('submit', e => {
+        e.preventDefault();
+        const text = $input.value.trim();
+        if (!text) return;
+        $input.value = '';
+        send({text: text});
+    });
+
+    if ($reset) $reset.addEventListener('click', async () => {
+        if (!confirm('Bạn có chắc muốn xoá toàn bộ lịch sử chat hiện tại và bắt đầu mới?')) return;
+        $reset.disabled = true;
+        try {
+            const res = await fetch(apiReset, {
+                method: 'POST',
+                headers: {'X-CSRFToken': csrfToken},
+            });
+            const data = await res.json();
+            if (res.ok) {
+                $body.querySelectorAll('.msg, .msg-interactive').forEach(el => {
+                    if (el.id !== 'typing-indicator') el.remove();
+                });
+                // Reset cả dropdown filter trên UI (backend đã reset trong session.reset())
+                if ($fDept) $fDept.value = '';
+                if ($fMajor) { $fMajor.value = ''; rebuildMajorOptions('', null); }
+                if ($fCat) $fCat.value = '';
+                refreshAppliedBadge();
+
+                (data.messages || []).forEach(m => {
+                    appendBubble(m);
+                    if (m.role === 'bot' && m.metadata) appendInteractive(m.metadata, m.id);
+                });
+                scrollToBottom();
+            } else {
+                alert('Xoá thất bại.');
+            }
+        } catch (err) {
+            alert('Lỗi: ' + err.message);
+        } finally {
+            $reset.disabled = false;
+        }
+    });
+
+    /* ---------- Initial: render TẤT CẢ interactive containers từ history ---------- */
+    document.querySelectorAll('.initial-interactive-json').forEach(script => {
+        const msgId = script.dataset.msgId;
+        try {
+            const meta = JSON.parse(script.textContent);
+            appendInteractive(meta, msgId);
+        } catch (e) {
+            console.warn('Không parse được initial interactive cho msg ' + msgId + ':', e);
+        }
+        script.remove();
+    });
+
+    /* ---------- Filter toolbar logic ---------- */
+    function refreshAppliedBadge() {
+        const hasAny = $fDept.value || $fMajor.value || $fCat.value;
+        $filters.classList.toggle('has-filters', !!hasAny);
+    }
+
+    function rebuildMajorOptions(deptId, selectedMajorId) {
+        const current = selectedMajorId || $fMajor.value;
+        $fMajor.innerHTML = '<option value="">Tất cả ngành</option>';
+        _allMajors.forEach(m => {
+            if (!deptId || String(m.department_id) === String(deptId)) {
+                const opt = document.createElement('option');
+                opt.value = m.id;
+                opt.textContent = m.name;
+                if (String(m.id) === String(current)) opt.selected = true;
+                $fMajor.appendChild(opt);
+            }
+        });
+    }
+
+    async function loadFilterOptions() {
+        try {
+            const res = await fetch(apiFilters);
+            if (!res.ok) return;
+            const data = await res.json();
+
+            // Departments
+            (data.departments || []).forEach(d => {
+                const opt = document.createElement('option');
+                opt.value = d.id;
+                opt.textContent = d.name;
+                $fDept.appendChild(opt);
+            });
+
+            // Majors (cache full list, filter on demand by dept)
+            _allMajors = data.majors || [];
+
+            // Categories
+            (data.categories || []).forEach(c => {
+                const opt = document.createElement('option');
+                opt.value = c.id;
+                opt.textContent = c.name;
+                $fCat.appendChild(opt);
+            });
+
+            // Apply selected từ session
+            const sel = data.selected || {};
+            if (sel.dept_id)     $fDept.value  = sel.dept_id;
+            if (sel.category_id) $fCat.value   = sel.category_id;
+            rebuildMajorOptions($fDept.value, sel.major_id);
+            refreshAppliedBadge();
+        } catch (e) {
+            console.warn('Không tải được danh sách filter:', e);
+        }
+    }
+
+    async function applyFilters() {
+        refreshAppliedBadge();
+        await send({
+            action: 'set_filters',
+            value: {
+                dept_id: $fDept.value || null,
+                major_id: $fMajor.value || null,
+                category_id: $fCat.value || null,
+            },
+        });
+    }
+
+    // Khi đổi khoa → rebuild ngành dropdown (vì ngành phụ thuộc khoa)
+    $fDept.addEventListener('change', () => {
+        rebuildMajorOptions($fDept.value, null);
+        applyFilters();
+    });
+    $fMajor.addEventListener('change', applyFilters);
+    $fCat.addEventListener('change', applyFilters);
+    $fClear.addEventListener('click', () => {
+        $fDept.value = '';
+        $fMajor.value = '';
+        $fCat.value = '';
+        rebuildMajorOptions('', null);
+        applyFilters();
+    });
+
+    // Load options ngay khi page mở
+    loadFilterOptions();
+
+    (function pruneStaleControls() {
+        const all = $body.querySelectorAll('.msg-interactive');
+        let lastControlIdx = -1;
+        all.forEach((c, idx) => {
+            if (isControlType(c.dataset.interactiveType)) lastControlIdx = idx;
+        });
+        all.forEach((c, idx) => {
+            if (isControlType(c.dataset.interactiveType) && idx !== lastControlIdx) c.remove();
+        });
+    })();
+
+    scrollToBottom();
+    $input.focus();
+})();
+</script>
+{% endblock %}

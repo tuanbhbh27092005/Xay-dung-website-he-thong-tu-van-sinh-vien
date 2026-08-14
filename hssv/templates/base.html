@@ -1,0 +1,402 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}HCMUTE · Tư Vấn Sinh Viên{% endblock %}</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="{% static 'css/site.css' %}">
+
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+
+{# ─── TOP BAR ─── #}
+<div class="topbar">
+    <div class="container">
+        <ul class="contact-list">
+            <li><i class="fas fa-envelope"></i> tuvan@hcmute.edu.vn</li>
+            <li class="d-none d-md-block"><i class="fas fa-phone"></i> (028) 3722 1223</li>
+            <li class="d-none d-lg-block"><i class="fas fa-map-marker-alt"></i> 1 Võ Văn Ngân, Thủ Đức, TP.HCM</li>
+        </ul>
+        <div class="social">
+            <a href="https://www.facebook.com/hcmute.fanpage" title="Facebook" target="_blank" rel="noopener"><i class="fab fa-facebook-f"></i></a>
+            <a href="https://www.youtube.com/@UTETVChannel" title="YouTube" target="_blank" rel="noopener"><i class="fab fa-youtube"></i></a>
+            <a href="mailto:tuvan@hcmute.edu.vn" title="Email" onclick="event.preventDefault(); navigator.clipboard.writeText('tuvan@hcmute.edu.vn'); alert('Đã copy email: tuvan@hcmute.edu.vn');"><i class="fas fa-envelope"></i></a>
+        </div>
+    </div>
+</div>
+
+{# ─── MAIN HEADER ─── #}
+<header class="site-header">
+    <div class="container">
+
+        <a href="{% url 'home' %}" class="brand">
+            <img src="{% static 'img/logo-hcmute.png' %}" alt="HCMUTE"
+                 onerror="this.style.display='none'">
+            <div class="brand-text">
+                <div class="brand-name">HCMUTE</div>
+                <div class="brand-sub">Tư vấn Sinh viên</div>
+            </div>
+        </a>
+
+        {# ─── NAV 4 MỤC: Trang chủ · Tin tức · Tìm kiếm · Trợ lý AI ─── #}
+        <ul class="nav-primary">
+            <li><a href="{% url 'home' %}"
+                   class="{% if request.resolver_match.url_name == 'home' %}active{% endif %}">
+                Trang chủ
+            </a></li>
+            <li><a href="{% url 'news:list' %}"
+                   class="{% if request.resolver_match.namespace == 'news' and 'manage' not in request.resolver_match.url_name %}active{% endif %}">
+                Tin tức
+            </a></li>
+            <li><a href="{% url 'search_questions' %}"
+                   class="{% if request.resolver_match.url_name == 'search_questions' %}active{% endif %}">
+                Tìm kiếm
+            </a></li>
+            <li><a href="{% url 'advisor_list' %}"
+                   class="{% if request.resolver_match.url_name == 'advisor_list' %}active{% endif %}">
+                Sổ tay BTV
+            </a></li>
+            <li><a href="{% url 'chatbot:chat' %}"
+                   class="{% if request.resolver_match.namespace == 'chatbot' %}active{% endif %}"
+                   style="display: inline-flex; align-items: center; gap: 6px;">
+                <i class="fas fa-robot" style="color: var(--brand-red);"></i> Trợ lý AI
+            </a></li>
+        </ul>
+
+        <div class="d-flex align-items-center gap-2">
+            {% if user.is_authenticated %}
+            <div class="dropdown">
+                <a class="user-chip dropdown-toggle" href="#" data-bs-toggle="dropdown">
+                    <span class="avatar">{{ user.first_name.0|default:user.username.0|upper }}</span>
+                    <span class="d-none d-md-inline">{{ user.get_full_name|default:user.username }}</span>
+                </a>
+                <ul class="dropdown-menu dropdown-menu-end">
+                    {# ─── Phân quyền hiển thị menu trong dropdown ─── #}
+                    {# Advisor / Admin: KHÔNG có "Hồ sơ cá nhân" — họ chỉ thấy Khu quản trị. #}
+                    {# (Hồ sơ cá nhân chỉ dành cho sinh viên/phụ huynh/cựu sv/hs phổ thông) #}
+                    {% if user.advisorprofile %}
+                        <li class="dropdown-item-text small text-muted px-3 pt-1">
+                            {% if user.advisorprofile.academic_title %}{{ user.advisorprofile.academic_title }}. {% endif %}{{ user.get_full_name|default:user.username }}
+                            {% if user.advisorprofile.position %}
+                                <div class="text-truncate" style="font-size: 11px;">{{ user.advisorprofile.position }}</div>
+                            {% endif %}
+                        </li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item" href="{% url 'admin_dashboard' %}">
+                            <i class="fas fa-shield-alt me-2"></i>Khu quản trị
+                        </a></li>
+                    {% else %}
+                        <li><a class="dropdown-item" href="{% url 'profile' %}">
+                            <i class="far fa-user me-2"></i>Hồ sơ &amp; Câu hỏi của tôi
+                        </a></li>
+                        <li><a class="dropdown-item" href="{% url 'chatbot:history' %}">
+                            <i class="far fa-comments me-2"></i>Lịch sử chat với AI
+                        </a></li>
+                    {% endif %}
+                    <li><hr class="dropdown-divider"></li>
+                    <li><a class="dropdown-item" href="{% url 'logout' %}">
+                        <i class="fas fa-sign-out-alt me-2"></i>Đăng xuất
+                    </a></li>
+                </ul>
+            </div>
+            {% else %}
+            <a href="{% url 'login' %}" class="btn btn-ghost btn-sm">Đăng nhập</a>
+            <a href="{% url 'register' %}" class="btn btn-primary btn-sm">Đăng ký</a>
+            {% endif %}
+        </div>
+    </div>
+</header>
+
+<main>
+    {% if messages %}
+    <div class="container py-3">
+        {% for message in messages %}
+        <div class="alert alert-{{ message.tags }} d-flex justify-content-between align-items-center">
+            <span>{{ message }}</span>
+            <button type="button" class="btn-close btn-close-sm" data-bs-dismiss="alert"></button>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    {% block content %}{% endblock %}
+</main>
+
+{# ─── FOOTER ─── #}
+<footer class="site-footer">
+    <div class="container">
+        <div class="row g-5">
+
+            <div class="col-lg-4">
+                <h5>HCMUTE Tư vấn Sinh viên</h5>
+                <p style="color: rgba(232,235,242,0.7); font-size: 14px; line-height: 1.6;">
+                    Cổng tư vấn chính thức của Trường Đại học Sư phạm Kỹ thuật TP.HCM.
+                    Kết nối sinh viên, cựu sinh viên, phụ huynh và học sinh phổ thông
+                    với ban tư vấn các khoa.
+                </p>
+            </div>
+
+            <div class="col-md-4 col-lg-3">
+                <h5>Liên kết nhanh</h5>
+                <div class="d-flex flex-column">
+                    <a href="{% url 'home' %}">Trang chủ</a>
+                    <a href="{% url 'news:list' %}">Tin tức</a>
+                    <a href="{% url 'search_questions' %}">Tìm kiếm câu hỏi</a>
+                    <a href="{% url 'advisor_list' %}">Sổ tay ban tư vấn</a>
+                    <a href="{% url 'chatbot:chat' %}">Trợ lý AI</a>
+                    {% if user.is_authenticated %}
+                    {% if user.advisorprofile %}
+                    <a href="{% url 'admin_dashboard' %}">Khu quản trị</a>
+                    {% else %}
+                    <a href="{% url 'profile' %}">Hồ sơ &amp; Câu hỏi của tôi</a>
+                    {% endif %}
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="col-md-4 col-lg-3">
+                <h5>Hỗ trợ</h5>
+                <div class="d-flex flex-column">
+                    <a href="{% url 'popular_questions' %}">Câu hỏi thường gặp</a>
+                    <a href="#">Hướng dẫn sử dụng</a>
+                    <a href="#">Liên hệ</a>
+                </div>
+            </div>
+
+            <div class="col-md-4 col-lg-2">
+                <h5>Kết nối</h5>
+                <div class="d-flex gap-3 mt-2" style="font-size: 18px;">
+                    <a href="https://www.facebook.com/hcmute.fanpage" target="_blank" rel="noopener"><i class="fab fa-facebook-f"></i></a>
+                    <a href="https://www.youtube.com/@UTETVChannel" target="_blank" rel="noopener"><i class="fab fa-youtube"></i></a>
+                    <a href="mailto:tuvan@hcmute.edu.vn" title="Email" onclick="event.preventDefault(); navigator.clipboard.writeText('tuvan@hcmute.edu.vn'); alert('Đã copy email: tuvan@hcmute.edu.vn');"><i class="fas fa-envelope"></i></a>
+                </div>
+            </div>
+        </div>
+
+        <div class="footer-bottom">
+            <div>© {% now "Y" %} HCMUTE · Đề tài tiểu luận chuyên ngành</div>
+
+        </div>
+    </div>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+{# ─── FLOATING CHATBOT BUTTON (all pages except chatbot) ─── #}
+{% if request.resolver_match.namespace != 'chatbot' %}
+<a href="{% url 'chatbot:chat' %}" id="fab-chatbot" class="fab-chatbot" title="Chat với Trợ lý AI">
+    <span class="fab-pulse-ring"></span>
+    <span class="fab-pulse-ring fab-pulse-ring-2"></span>
+    <img src="{% static 'img/chatbot-logo.png' %}" alt="Trợ lý AI" class="fab-avatar">
+    <!-- sparkle particles -->
+    <span class="fab-sparkle fab-sparkle-1">✦</span>
+    <span class="fab-sparkle fab-sparkle-2">✦</span>
+    <span class="fab-sparkle fab-sparkle-3">✧</span>
+    <span class="fab-sparkle fab-sparkle-4">✦</span>
+    <span class="fab-sparkle fab-sparkle-5">✧</span>
+    <span class="fab-sparkle fab-sparkle-6">✦</span>
+    <span class="fab-tooltip">Hỏi Trợ lý AI 🤖</span>
+</a>
+
+<style>
+    /* ── Floating Action Button ── */
+    .fab-chatbot {
+        position: fixed;
+        bottom: 30px;
+        right: 30px;
+        z-index: 9999;
+        width: 64px;
+        height: 64px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #DA251D 0%, #0B3F8C 100%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        text-decoration: none;
+        cursor: pointer;
+        box-shadow:
+            0 4px 20px rgba(218, 37, 29, 0.35),
+            0 0 30px rgba(11, 63, 140, 0.2);
+        transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.3s;
+        animation: fabBounceIn 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) 0.5s both;
+    }
+    .fab-chatbot:hover {
+        transform: scale(1.12) rotate(-5deg);
+        box-shadow:
+            0 8px 32px rgba(218, 37, 29, 0.5),
+            0 0 50px rgba(11, 63, 140, 0.3);
+    }
+    .fab-chatbot:active {
+        transform: scale(0.95);
+    }
+
+    @keyframes fabBounceIn {
+        0% { opacity: 0; transform: scale(0) translateY(40px); }
+        100% { opacity: 1; transform: scale(1) translateY(0); }
+    }
+
+    /* ── Avatar ── */
+    .fab-avatar {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        object-fit: cover;
+        position: relative;
+        z-index: 2;
+        filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2));
+    }
+
+    /* ── Pulse rings ── */
+    .fab-pulse-ring {
+        position: absolute;
+        inset: -6px;
+        border-radius: 50%;
+        border: 2.5px solid rgba(218, 37, 29, 0.5);
+        animation: fabPulse 2.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        z-index: 1;
+    }
+    .fab-pulse-ring-2 {
+        border-color: rgba(11, 63, 140, 0.4);
+        animation-delay: 1.25s;
+    }
+    @keyframes fabPulse {
+        0% { transform: scale(1); opacity: 0.7; }
+        70% { transform: scale(1.7); opacity: 0; }
+        100% { transform: scale(1.7); opacity: 0; }
+    }
+
+    /* ── Sparkle particles ── */
+    .fab-sparkle {
+        position: absolute;
+        font-size: 12px;
+        color: #FFD700;
+        z-index: 3;
+        pointer-events: none;
+        text-shadow: 0 0 6px rgba(255, 215, 0, 0.8);
+        animation-iteration-count: infinite;
+        animation-timing-function: ease-in-out;
+    }
+    .fab-sparkle-1 {
+        top: -4px; right: 2px;
+        font-size: 14px;
+        animation: sparkleFloat1 2s infinite, sparkleTwinkle 0.8s infinite alternate;
+    }
+    .fab-sparkle-2 {
+        top: 6px; left: -6px;
+        font-size: 10px;
+        color: #FFF;
+        animation: sparkleFloat2 2.4s 0.3s infinite, sparkleTwinkle 1s 0.2s infinite alternate;
+    }
+    .fab-sparkle-3 {
+        bottom: 0; right: -8px;
+        font-size: 13px;
+        animation: sparkleFloat3 2.2s 0.6s infinite, sparkleTwinkle 0.9s 0.4s infinite alternate;
+    }
+    .fab-sparkle-4 {
+        top: -8px; left: 14px;
+        font-size: 9px;
+        color: #FFF;
+        animation: sparkleFloat4 2.6s 0.1s infinite, sparkleTwinkle 1.1s 0.6s infinite alternate;
+    }
+    .fab-sparkle-5 {
+        bottom: -4px; left: 4px;
+        font-size: 11px;
+        animation: sparkleFloat5 2.3s 0.5s infinite, sparkleTwinkle 0.7s 0.3s infinite alternate;
+    }
+    .fab-sparkle-6 {
+        top: 50%; right: -10px;
+        font-size: 8px;
+        color: #FFF;
+        animation: sparkleFloat6 2.1s 0.8s infinite, sparkleTwinkle 1.2s 0.1s infinite alternate;
+    }
+
+    @keyframes sparkleTwinkle {
+        0% { opacity: 0.3; transform: scale(0.6); }
+        100% { opacity: 1; transform: scale(1.2); }
+    }
+    @keyframes sparkleFloat1 {
+        0%, 100% { transform: translate(0, 0) rotate(0deg); }
+        50% { transform: translate(4px, -6px) rotate(20deg); }
+    }
+    @keyframes sparkleFloat2 {
+        0%, 100% { transform: translate(0, 0) rotate(0deg); }
+        50% { transform: translate(-5px, -4px) rotate(-15deg); }
+    }
+    @keyframes sparkleFloat3 {
+        0%, 100% { transform: translate(0, 0) rotate(0deg); }
+        50% { transform: translate(5px, 4px) rotate(25deg); }
+    }
+    @keyframes sparkleFloat4 {
+        0%, 100% { transform: translate(0, 0); }
+        50% { transform: translate(-3px, -7px); }
+    }
+    @keyframes sparkleFloat5 {
+        0%, 100% { transform: translate(0, 0) rotate(0deg); }
+        50% { transform: translate(-4px, 5px) rotate(-20deg); }
+    }
+    @keyframes sparkleFloat6 {
+        0%, 100% { transform: translate(0, 0); }
+        50% { transform: translate(6px, -3px); }
+    }
+
+    /* ── Tooltip ── */
+    .fab-tooltip {
+        position: absolute;
+        right: calc(100% + 14px);
+        top: 50%;
+        transform: translateY(-50%);
+        background: linear-gradient(135deg, #1a1a2e, #16213e);
+        color: #fff;
+        font-size: 13px;
+        font-weight: 600;
+        font-family: 'Be Vietnam Pro', sans-serif;
+        padding: 8px 16px;
+        border-radius: 10px;
+        white-space: nowrap;
+        pointer-events: none;
+        opacity: 0;
+        transition: opacity 0.25s, transform 0.25s;
+        transform: translateY(-50%) translateX(8px);
+        box-shadow: 0 4px 16px rgba(0,0,0,0.25);
+    }
+    .fab-tooltip::after {
+        content: '';
+        position: absolute;
+        right: -6px;
+        top: 50%;
+        transform: translateY(-50%);
+        border: 6px solid transparent;
+        border-left-color: #16213e;
+    }
+    .fab-chatbot:hover .fab-tooltip {
+        opacity: 1;
+        transform: translateY(-50%) translateX(0);
+    }
+
+    /* ── Responsive ── */
+    @media (max-width: 640px) {
+        .fab-chatbot {
+            width: 56px;
+            height: 56px;
+            bottom: 20px;
+            right: 16px;
+        }
+        .fab-avatar { width: 34px; height: 34px; }
+        .fab-tooltip { display: none; }
+        .fab-sparkle { font-size: 9px !important; }
+    }
+</style>
+{% endif %}
+
+{% block extra_js %}{% endblock %}
+</body>
+</html>

@@ -1,0 +1,92 @@
+{% extends 'admin_panel/base_admin.html' %}
+{% load widget_tweaks %}
+
+{% block title %}Chỉnh sửa tư vấn viên - Tư Vấn Sinh Viên{% endblock %}
+
+{% block content %}
+<div class="admin-header">
+    <h2><i class="fas fa-user-edit me-2"></i>Chỉnh sửa tư vấn viên</h2>
+</div>
+
+<div class="card">
+    <div class="card-header bg-primary text-white">
+        <h5 class="mb-0">Chỉnh sửa thông tin tư vấn viên</h5>
+    </div>
+    <div class="card-body">
+        <form method="post" enctype="multipart/form-data">
+            {% csrf_token %}
+
+            <div class="row g-3">
+                <div class="col-md-8">
+                    <div class="mb-3">
+                        <label for="{{ form.user.id_for_label }}" class="form-label">{{ form.user.label }}</label>
+                        {{ form.user.errors }}
+                        {{ form.user|add_class:"form-select" }}
+                        <div class="form-text">Người dùng được chọn làm tư vấn viên</div>
+                    </div>
+
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label for="{{ form.role.id_for_label }}" class="form-label">{{ form.role.label }}</label>
+                            {{ form.role.errors }}
+                            {{ form.role|add_class:"form-select" }}
+                        </div>
+                        <div class="col-md-6">
+                            <label for="{{ form.department.id_for_label }}" class="form-label">{{ form.department.label }}</label>
+                            {{ form.department.errors }}
+                            {{ form.department|add_class:"form-select" }}
+                        </div>
+                    </div>
+
+                    <div class="row g-3 mt-1">
+                        <div class="col-md-4">
+                            <label for="{{ form.academic_title.id_for_label }}" class="form-label">{{ form.academic_title.label }}</label>
+                            {{ form.academic_title.errors }}
+                            {{ form.academic_title|add_class:"form-select" }}
+                        </div>
+                        <div class="col-md-8">
+                            <label for="{{ form.position.id_for_label }}" class="form-label">{{ form.position.label }}</label>
+                            {{ form.position.errors }}
+                            {{ form.position|add_class:"form-control" }}
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-4">
+                    <label class="form-label">{{ form.avatar.label }}</label>
+                    {% if advisor.avatar %}
+                    <div class="mb-2">
+                        <img src="{{ advisor.avatar.url }}" alt="avatar"
+                             style="width: 120px; height: 120px; object-fit: cover; border-radius: 50%; border: 2px solid var(--border);">
+                    </div>
+                    {% endif %}
+                    {{ form.avatar.errors }}
+                    {{ form.avatar|add_class:"form-control" }}
+                    <div class="form-text">{{ form.avatar.help_text }}</div>
+                </div>
+            </div>
+
+            <hr class="my-4">
+
+            <div class="d-flex justify-content-between">
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-save me-1"></i>Lưu thay đổi
+                </button>
+                <a href="{% url 'manage_advisors' %}" class="btn btn-outline-secondary">
+                    <i class="fas fa-times me-1"></i>Hủy
+                </a>
+            </div>
+        </form>
+    </div>
+    <div class="card-footer">
+        <div class="d-flex justify-content-between text-muted">
+            <div>
+                <small><i class="fas fa-user me-1"></i>Tư vấn viên: {{ advisor.user.get_full_name|default:advisor.user.username }}</small>
+            </div>
+            <div>
+                <small><i class="fas fa-id-badge me-1"></i>ID: {{ advisor.id }}</small>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

@@ -1,0 +1,180 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Hồ sơ cá nhân · HCMUTE Tư Vấn{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+
+    {# ─── PAGE HEADER ─── #}
+    <div class="mb-5">
+        <span class="eyebrow">Tài khoản của tôi</span>
+        <h1 class="mt-2 mb-0">Hồ sơ cá nhân</h1>
+    </div>
+
+    <div class="row g-4">
+
+        {# ─── LEFT: PROFILE INFO ─── #}
+        <div class="col-lg-4">
+            <div class="card sticky-top" style="top: 90px;">
+                <div class="card-body text-center" style="padding: var(--sp-6);">
+                    <div style="width: 96px; height: 96px; border-radius: 50%;
+                                background: var(--brand-red);
+                                color: #fff; display: inline-flex;
+                                align-items: center; justify-content: center;
+                                font-size: 2rem; font-weight: 800;
+                                margin-bottom: var(--sp-4);">
+                        {{ user.first_name.0|default:user.username.0|upper }}
+                    </div>
+                    <h4 style="margin-bottom: 4px;">{{ user.get_full_name|default:user.username }}</h4>
+                    <p class="muted mb-3" style="font-size: 13px;">{{ user.email }}</p>
+                    <span class="badge bg-info">{{ user.get_user_type_display|default:"Người dùng" }}</span>
+                </div>
+
+                <ul class="list-group list-group-flush">
+                    <li class="list-group-item d-flex justify-content-between" style="padding: 12px 24px;">
+                        <span class="muted">Tên đăng nhập</span>
+                        <span style="font-weight: 600;">{{ user.username }}</span>
+                    </li>
+
+                    {% if user.student_id %}
+                    <li class="list-group-item d-flex justify-content-between" style="padding: 12px 24px;">
+                        <span class="muted">MSSV</span>
+                        <span style="font-weight: 600;" class="font-mono">{{ user.student_id }}</span>
+                    </li>
+                    {% endif %}
+
+                    {% if user.graduation_year %}
+                    <li class="list-group-item d-flex justify-content-between" style="padding: 12px 24px;">
+                        <span class="muted">Niên khóa</span>
+                        <span style="font-weight: 600;">{{ user.graduation_year }}</span>
+                    </li>
+                    {% endif %}
+
+                    {% if user.phone_number %}
+                    <li class="list-group-item d-flex justify-content-between" style="padding: 12px 24px;">
+                        <span class="muted">Số điện thoại</span>
+                        <span style="font-weight: 600;" class="font-mono">{{ user.phone_number }}</span>
+                    </li>
+                    {% endif %}
+
+                    {% if user.grade %}
+                    <li class="list-group-item d-flex justify-content-between" style="padding: 12px 24px;">
+                        <span class="muted">Lớp</span>
+                        <span style="font-weight: 600;">{{ user.grade }}</span>
+                    </li>
+                    {% endif %}
+
+                    {% if user.advisorprofile %}
+                    <li class="list-group-item d-flex justify-content-between" style="padding: 12px 24px;">
+                        <span class="muted">Vai trò</span>
+                        <span style="font-weight: 600;" class="text-red">
+                            {{ user.advisorprofile.get_role_display }}
+                        </span>
+                    </li>
+                    {% if user.advisorprofile.department %}
+                    <li class="list-group-item d-flex justify-content-between" style="padding: 12px 24px;">
+                        <span class="muted">Khoa/Đơn vị</span>
+                        <span style="font-weight: 600;">{{ user.advisorprofile.department.name }}</span>
+                    </li>
+                    {% endif %}
+                    {% endif %}
+                </ul>
+
+                <div class="card-footer d-flex flex-column gap-2">
+                    <a href="{% url 'chatbot:history' %}" class="btn btn-outline-primary btn-sm w-100">
+                        <i class="far fa-comments me-1"></i> Lịch sử chat với AI
+                    </a>
+                    <a href="{% url 'logout' %}" class="btn btn-light btn-sm w-100">
+                        <i class="fas fa-sign-out-alt me-1"></i> Đăng xuất
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        {# ─── RIGHT: MY QUESTIONS ─── #}
+        <div class="col-lg-8">
+
+            {# Stats row #}
+            <div class="row g-3 mb-4">
+                <div class="col-4">
+                    <div class="stat" style="padding: 16px 20px;">
+                        <div class="stat-label" style="margin-bottom: 4px;"><i class="far fa-comment-dots"></i> Tổng</div>
+                        <div style="font-size: 1.75rem; font-weight: 800; color: var(--text);">{{ total_questions }}</div>
+                    </div>
+                </div>
+                <div class="col-4">
+                    <div class="stat warn" style="padding: 16px 20px;">
+                        <div class="stat-label" style="margin-bottom: 4px;"><i class="far fa-clock"></i> Chờ</div>
+                        <div style="font-size: 1.75rem; font-weight: 800; color: var(--warning);">{{ total_pending }}</div>
+                    </div>
+                </div>
+                <div class="col-4">
+                    <div class="stat success" style="padding: 16px 20px;">
+                        <div class="stat-label" style="margin-bottom: 4px;"><i class="fas fa-check"></i> Đã trả lời</div>
+                        <div style="font-size: 1.75rem; font-weight: 800; color: var(--success);">{{ total_answered }}</div>
+                    </div>
+                </div>
+            </div>
+
+            {# Tabs #}
+            <div class="card">
+                <div class="card-header" style="padding: 0; border-bottom: 1px solid var(--border);">
+                    <ul class="nav" role="tablist" style="gap: 0; padding: 0 var(--sp-5);">
+                        <li class="nav-item">
+                            <button class="nav-link active"
+                                    data-bs-toggle="tab" data-bs-target="#tab-all" type="button"
+                                    style="padding: 16px 0; margin-right: 24px; border: none; border-bottom: 2px solid var(--brand-red); color: var(--brand-red); font-weight: 700; background: transparent;">
+                                Tất cả ({{ total_questions }})
+                            </button>
+                        </li>
+                        <li class="nav-item">
+                            <button class="nav-link"
+                                    data-bs-toggle="tab" data-bs-target="#tab-pending" type="button"
+                                    style="padding: 16px 0; margin-right: 24px; border: none; border-bottom: 2px solid transparent; color: var(--text-3); font-weight: 600; background: transparent;">
+                                Chờ trả lời ({{ total_pending }})
+                            </button>
+                        </li>
+                        <li class="nav-item">
+                            <button class="nav-link"
+                                    data-bs-toggle="tab" data-bs-target="#tab-answered" type="button"
+                                    style="padding: 16px 0; border: none; border-bottom: 2px solid transparent; color: var(--text-3); font-weight: 600; background: transparent;">
+                                Đã trả lời ({{ total_answered }})
+                            </button>
+                        </li>
+                    </ul>
+                </div>
+
+                <div class="card-body" style="padding: var(--sp-5);">
+                    <div class="tab-content">
+                        <div class="tab-pane fade show active" id="tab-all">
+                            {% include 'accounts/_question_list.html' with items=user_questions %}
+                        </div>
+                        <div class="tab-pane fade" id="tab-pending">
+                            {% include 'accounts/_question_list.html' with items=pending_questions %}
+                        </div>
+                        <div class="tab-pane fade" id="tab-answered">
+                            {% include 'accounts/_question_list.html' with items=answered_questions %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<script>
+// Custom tab styling - đổi màu border khi active vì Bootstrap default không khớp design
+document.querySelectorAll('[data-bs-toggle="tab"]').forEach(btn => {
+    btn.addEventListener('shown.bs.tab', function () {
+        document.querySelectorAll('[data-bs-toggle="tab"]').forEach(b => {
+            b.style.borderBottomColor = 'transparent';
+            b.style.color = 'var(--text-3)';
+        });
+        this.style.borderBottomColor = 'var(--brand-red)';
+        this.style.color = 'var(--brand-red)';
+    });
+});
+</script>
+{% endblock %}

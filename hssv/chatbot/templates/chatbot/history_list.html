@@ -1,0 +1,182 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Lịch sử chat · HCMUTE Trợ lý AI{% endblock %}
+
+{% block extra_css %}
+<style>
+    .history-wrapper { max-width: 880px; margin: 30px auto; }
+    .history-head {
+        display: flex; align-items: center; justify-content: space-between;
+        margin-bottom: 24px;
+    }
+    .session-card {
+        background: var(--bg-card, #fff);
+        border: 1px solid var(--border);
+        border-radius: var(--r-lg);
+        padding: 18px 22px;
+        margin-bottom: 12px;
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        transition: all .15s;
+        cursor: pointer;
+        position: relative;
+    }
+    .session-card:hover {
+        border-color: var(--brand-blue);
+        box-shadow: var(--shadow);
+        transform: translateY(-1px);
+    }
+    .session-card .ico {
+        width: 44px; height: 44px;
+        border-radius: 50%;
+        background: #fff;
+        color: var(--brand-red);
+        display: inline-flex; align-items: center; justify-content: center;
+        flex-shrink: 0;
+        font-size: 17px;
+        overflow: hidden;
+        border: 1px solid var(--border);
+    }
+    .session-card .ico img { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; }
+    .session-card .main { flex: 1; min-width: 0; }
+    .session-card .preview {
+        font-weight: 600;
+        color: var(--text);
+        margin-bottom: 4px;
+        font-size: 14px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        display: -webkit-box;
+        -webkit-line-clamp: 1;
+        -webkit-box-orient: vertical;
+    }
+    .session-card .meta {
+        font-size: 12px;
+        color: var(--text-3);
+        display: flex; gap: 12px; flex-wrap: wrap;
+    }
+    .session-card .badge-state {
+        font-size: 11px;
+        padding: 3px 10px;
+        border-radius: 999px;
+        font-weight: 700;
+    }
+    .badge-state.completed { background: var(--success-soft); color: var(--success); }
+    .badge-state.active { background: var(--brand-blue-soft); color: var(--brand-blue); }
+    .badge-state.escalated { background: var(--warning-soft); color: var(--warning); }
+    .session-card .btn-del {
+        background: transparent;
+        border: 1px solid var(--border);
+        color: var(--text-3);
+        padding: 6px 10px;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 12px;
+        transition: all .15s;
+    }
+    .session-card .btn-del:hover {
+        border-color: var(--danger);
+        color: var(--danger);
+        background: var(--danger-soft);
+    }
+    .empty-state {
+        text-align: center;
+        padding: 60px 20px;
+        color: var(--text-3);
+    }
+    .empty-state .big-ico {
+        font-size: 56px;
+        opacity: 0.4;
+        margin-bottom: 16px;
+        display: block;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="history-wrapper">
+        <div class="history-head">
+            <div>
+                <span class="eyebrow">Trợ lý AI</span>
+                <h1 class="mt-1 mb-0" style="font-size: 1.75rem;">Lịch sử trò chuyện</h1>
+                <p class="muted mb-0" style="font-size: 13px;">Các phiên chat trước của bạn với trợ lý ảo HCMUTE.</p>
+            </div>
+            <a href="{% url 'chatbot:chat' %}" class="btn btn-primary">
+                <i class="fas fa-comment-dots me-1"></i> Chat mới
+            </a>
+        </div>
+
+        {% if items %}
+        <div class="sessions-list">
+            {% for item in items %}
+            <div class="session-card" onclick="window.location='{% url 'chatbot:history_detail' item.session.id %}'">
+                <div class="ico"><img src="{% static 'img/chatbot-logo.png' %}" alt="Bot"></div>
+                <div class="main">
+                    <div class="preview">{{ item.preview|truncatechars:120 }}</div>
+                    <div class="meta">
+                        <span><i class="far fa-clock"></i> {{ item.last_at|date:"d/m/Y H:i" }}</span>
+                        <span><i class="far fa-comment"></i> {{ item.message_count }} tin nhắn</span>
+                        {% if item.session.escalated_to_advisor %}
+                            <span class="badge-state escalated">Đã gửi tư vấn viên</span>
+                        {% elif item.session.state == 'completed' %}
+                            <span class="badge-state completed">Hoàn tất</span>
+                        {% else %}
+                            <span class="badge-state active">Đang xử lý</span>
+                        {% endif %}
+                    </div>
+                </div>
+                <button class="btn-del"
+                        onclick="event.stopPropagation(); deleteSession({{ item.session.id }}, this)"
+                        title="Xoá phiên">
+                    <i class="fas fa-trash-alt"></i>
+                </button>
+            </div>
+            {% endfor %}
+        </div>
+        {# Pagination #}
+        {% include 'questions/_pagination.html' with page_obj=page %}
+
+        {% else %}
+        <div class="empty-state">
+            <i class="far fa-comments big-ico"></i>
+            <h5>Chưa có phiên chat nào</h5>
+            <p>Hãy bắt đầu cuộc trò chuyện đầu tiên với trợ lý AI.</p>
+            <a href="{% url 'chatbot:chat' %}" class="btn btn-primary mt-2">
+                <i class="fas fa-paper-plane me-1"></i> Bắt đầu chat
+            </a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+const csrfToken = '{{ csrf_token }}';
+
+async function deleteSession(sessionId, btn) {
+    if (!confirm('Xoá phiên chat này? Tất cả tin nhắn sẽ bị xoá vĩnh viễn.')) return;
+    const card = btn.closest('.session-card');
+    btn.disabled = true;
+    try {
+        const res = await fetch(`/chatbot/history/${sessionId}/delete/`, {
+            method: 'POST',
+            headers: {'X-CSRFToken': csrfToken},
+        });
+        if (res.ok) {
+            card.style.transition = 'all .25s';
+            card.style.opacity = '0';
+            card.style.transform = 'translateX(-20px)';
+            setTimeout(() => card.remove(), 250);
+        } else {
+            alert('Xoá thất bại.');
+            btn.disabled = false;
+        }
+    } catch (e) {
+        alert('Lỗi kết nối.');
+        btn.disabled = false;
+    }
+}
+</script>
+{% endblock %}

@@ -1,0 +1,372 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Sổ tay ban tư vấn · HCMUTE{% endblock %}
+
+{% block extra_css %}
+<style>
+    .handbook-hero {
+        background: linear-gradient(135deg, var(--brand-blue) 0%, var(--brand-blue-deep) 100%);
+        color: #fff;
+        padding: 48px 0 32px;
+        position: relative;
+        overflow: hidden;
+    }
+    .handbook-hero::before {
+        content: '';
+        position: absolute;
+        top: -120px; right: -120px;
+        width: 360px; height: 360px;
+        background: radial-gradient(circle, rgba(218,37,29,0.20) 0%, transparent 60%);
+        pointer-events: none;
+    }
+    .handbook-hero .container { position: relative; z-index: 1; }
+    .handbook-hero h1 {
+        color: #fff;
+        font-weight: 800;
+        margin: 8px 0 10px;
+        line-height: 1.2;
+        font-size: 2rem;
+    }
+    .handbook-hero p {
+        color: rgba(255,255,255,0.85);
+        font-size: 15px;
+        max-width: 700px;
+        margin: 0;
+    }
+    .handbook-hero .eyebrow { color: rgba(255,255,255,0.7); }
+    .handbook-hero .total-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        background: rgba(255,255,255,0.14);
+        color: #fff;
+        padding: 8px 18px;
+        border-radius: 999px;
+        font-size: 13px;
+        font-weight: 600;
+        margin-top: 16px;
+        border: 1px solid rgba(255,255,255,0.20);
+    }
+
+    /* Filter + search bar floating */
+    .handbook-toolbar {
+        background: var(--bg);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 14px 18px;
+        margin: -26px auto 24px;
+        box-shadow: 0 8px 24px rgba(15,42,82,0.08);
+        position: relative;
+        z-index: 5;
+        display: flex;
+        gap: 12px;
+        flex-wrap: wrap;
+        align-items: center;
+    }
+    .handbook-toolbar label {
+        font-weight: 600; color: var(--text-2);
+        font-size: 13px; margin: 0;
+        display: inline-flex; align-items: center; gap: 6px;
+    }
+    .handbook-toolbar label i { color: var(--brand-blue); }
+    .handbook-toolbar select,
+    .handbook-toolbar input[type="text"] {
+        padding: 8px 14px;
+        border: 1.5px solid var(--border-2);
+        border-radius: 8px;
+        background: #fff;
+        font-size: 13px;
+        font-family: var(--font-sans);
+        min-width: 220px;
+        cursor: pointer;
+    }
+    .handbook-toolbar input[type="text"] { cursor: text; min-width: 240px; flex: 1; }
+    .handbook-toolbar select:focus,
+    .handbook-toolbar input[type="text"]:focus {
+        outline: none;
+        border-color: var(--brand-blue);
+        box-shadow: 0 0 0 3px var(--brand-blue-soft);
+    }
+
+    /* Table */
+    .handbook-table-wrap {
+        background: #fff;
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        overflow: hidden;
+        box-shadow: 0 4px 12px rgba(15,42,82,0.04);
+    }
+    .handbook-table {
+        width: 100%;
+        margin: 0;
+        border-collapse: collapse;
+        font-size: 14px;
+    }
+    .handbook-table thead {
+        background: #fafbfd;
+        border-bottom: 1px solid var(--border);
+    }
+    .handbook-table thead th {
+        padding: 16px 18px;
+        font-weight: 700;
+        color: var(--text);
+        font-size: 13.5px;
+        text-align: left;
+        user-select: none;
+        cursor: pointer;
+        position: relative;
+        white-space: nowrap;
+        transition: background .15s;
+    }
+    .handbook-table thead th:hover { background: #f1f3f8; }
+    .handbook-table thead th .sort-icon {
+        margin-left: 6px;
+        font-size: 11px;
+        color: var(--brand-blue);
+        opacity: 0.3;
+        transition: opacity .15s;
+    }
+    .handbook-table thead th.sort-asc .sort-icon,
+    .handbook-table thead th.sort-desc .sort-icon { opacity: 1; }
+    .handbook-table thead th.sort-asc .sort-icon::before { content: '\f0d8'; } /* fa-caret-up */
+    .handbook-table thead th.sort-desc .sort-icon::before { content: '\f0d7'; } /* fa-caret-down */
+
+    .handbook-table tbody td {
+        padding: 18px;
+        border-top: 1px solid var(--border);
+        vertical-align: middle;
+        font-size: 14px;
+    }
+    .handbook-table tbody tr:hover { background: #fafbfd; }
+
+    .col-stt {
+        width: 70px; text-align: center;
+        font-family: var(--font-mono);
+        color: var(--text-3);
+        font-weight: 700;
+    }
+    .col-avatar { width: 110px; text-align: center; }
+
+    .tbl-avatar {
+        width: 44px; height: 44px;
+        border-radius: 50%;
+        object-fit: cover;
+        border: 1px solid var(--border);
+        display: inline-block;
+    }
+    .tbl-avatar-empty {
+        width: 44px; height: 44px;
+        border-radius: 50%;
+        background: var(--bg-soft);
+        color: var(--text-mute);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 18px;
+        border: 1px solid var(--border);
+    }
+    .tbl-avatar-initial {
+        width: 44px; height: 44px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, var(--brand-blue), var(--brand-red));
+        color: #fff;
+        font-weight: 700;
+        font-size: 16px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .name-cell .full-name {
+        font-weight: 600;
+        color: var(--text);
+    }
+    .name-cell .full-name .title-prefix {
+        color: var(--brand-red);
+        margin-right: 3px;
+    }
+    .name-cell .position {
+        font-size: 12px;
+        color: var(--text-3);
+        margin-top: 2px;
+    }
+
+    .contact-link {
+        color: var(--brand-blue);
+        text-decoration: none;
+    }
+    .contact-link:hover { text-decoration: underline; }
+    .contact-empty { color: var(--text-mute); font-style: italic; font-size: 12.5px; }
+
+    .empty-state {
+        text-align: center;
+        padding: 60px 20px;
+        background: #fff;
+        border: 1px dashed var(--border-2);
+        border-radius: 12px;
+    }
+    .empty-state i {
+        font-size: 48px; color: var(--text-mute); margin-bottom: 14px; display: block;
+    }
+
+    @media (max-width: 768px) {
+        .handbook-table { font-size: 12.5px; }
+        .handbook-table thead th, .handbook-table tbody td { padding: 12px 10px; }
+        .col-stt, .col-avatar { width: auto; }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+
+{# ─── HERO ─── #}
+<section class="handbook-hero">
+    <div class="container">
+        <span class="eyebrow"><i class="far fa-address-book me-1"></i> Liên hệ ban tư vấn</span>
+        <h1>Sổ tay ban tư vấn HCMUTE</h1>
+        <p>
+            Danh bạ tư vấn viên các khoa/đơn vị của trường. Bạn có thể trao đổi trực tiếp
+            qua email hoặc điện thoại khi cần hỗ trợ chuyên sâu.
+        </p>
+        <span class="total-pill">
+            <i class="fas fa-users"></i> {{ total }} tư vấn viên
+        </span>
+    </div>
+</section>
+
+<div class="container py-4">
+
+    {# ─── TOOLBAR (filter + search) ─── #}
+    <form method="get" class="handbook-toolbar">
+        <label><i class="fas fa-filter"></i> Đơn vị:</label>
+        <select name="department" onchange="this.form.submit()">
+            <option value="">— Tất cả khoa/đơn vị —</option>
+            {% for d in departments %}
+            <option value="{{ d.id }}" {% if selected_dept and selected_dept.id == d.id %}selected{% endif %}>
+                {{ d.name }}
+            </option>
+            {% endfor %}
+        </select>
+
+        <label class="ms-2"><i class="fas fa-search"></i> Tìm nhanh:</label>
+        <input type="text" id="tbl-search" placeholder="Gõ tên / email / SĐT để lọc..." autocomplete="off">
+
+        {% if selected_dept %}
+        <a href="{% url 'advisor_list' %}" class="btn btn-light btn-sm">
+            <i class="fas fa-times me-1"></i> Bỏ lọc khoa
+        </a>
+        {% endif %}
+    </form>
+
+    {% if advisors %}
+    <div class="handbook-table-wrap">
+        <table class="handbook-table" id="handbook-table">
+            <thead>
+                <tr>
+                    <th data-sort="num" class="col-stt">STT <i class="fas sort-icon"></i></th>
+                    <th data-sort="text">Họ tên <i class="fas sort-icon"></i></th>
+                    <th data-sort="text">Số điện thoại <i class="fas sort-icon"></i></th>
+                    <th data-sort="text">Email <i class="fas sort-icon"></i></th>
+                    <th class="col-avatar">Hình đại diện</th>
+                    <th data-sort="text">Đơn vị <i class="fas sort-icon"></i></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for adv in advisors %}
+                <tr>
+                    <td class="col-stt">{{ forloop.counter }}</td>
+                    <td class="name-cell">
+                        <div class="full-name">
+                            {% if adv.academic_title %}<span class="title-prefix">{{ adv.academic_title }}.</span>{% endif %}
+                            {{ adv.user.get_full_name|default:adv.user.username }}
+                        </div>
+                        {% if adv.position %}<div class="position">{{ adv.position }}</div>{% endif %}
+                    </td>
+                    <td>
+                        {% if adv.user.phone_number %}
+                        <a class="contact-link" href="tel:{{ adv.user.phone_number }}" onclick="event.preventDefault(); navigator.clipboard.writeText('{{ adv.user.phone_number }}'); alert('Đã copy số điện thoại: {{ adv.user.phone_number }}');" title="Nhấn để copy số điện thoại">{{ adv.user.phone_number }}</a>
+                        {% else %}
+                        <span class="contact-empty">—</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if adv.user.email %}
+                        <a class="contact-link" href="mailto:{{ adv.user.email }}" onclick="event.preventDefault(); navigator.clipboard.writeText('{{ adv.user.email }}'); alert('Đã copy email: {{ adv.user.email }}');" title="Nhấn để copy email">{{ adv.user.email }}</a>
+                        {% else %}
+                        <span class="contact-empty">—</span>
+                        {% endif %}
+                    </td>
+                    <td class="col-avatar">
+                        {% if adv.avatar %}
+                        <img src="{{ adv.avatar.url }}" alt="avatar" class="tbl-avatar">
+                        {% else %}
+                        <span class="tbl-avatar-empty"><i class="fas fa-user"></i></span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if adv.department %}{{ adv.department.name }}
+                        {% else %}<span class="contact-empty">—</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <i class="far fa-address-book"></i>
+        <h5>Chưa có tư vấn viên nào{% if selected_dept %} thuộc khoa "{{ selected_dept.name }}"{% endif %}.</h5>
+        <p class="muted">Vui lòng quay lại sau hoặc liên hệ trực tiếp với phòng tư vấn sinh viên.</p>
+    </div>
+    {% endif %}
+</div>
+
+{# ─── SORT + SEARCH JS (client-side, không cần reload) ─── #}
+<script>
+(function () {
+    const table = document.getElementById('handbook-table');
+    if (!table) return;
+    const tbody = table.querySelector('tbody');
+    const headers = table.querySelectorAll('thead th[data-sort]');
+    const searchInput = document.getElementById('tbl-search');
+
+    // ─── Sort ───
+    headers.forEach((th, colIdx) => {
+        // Tìm column index thực sự dựa trên DOM order
+        const actualIdx = Array.from(th.parentNode.children).indexOf(th);
+        th.addEventListener('click', () => {
+            const type = th.dataset.sort;
+            const isAsc = !th.classList.contains('sort-asc');
+            // Reset state các th khác
+            headers.forEach(h => h.classList.remove('sort-asc', 'sort-desc'));
+            th.classList.toggle('sort-asc', isAsc);
+            th.classList.toggle('sort-desc', !isAsc);
+
+            const rows = Array.from(tbody.querySelectorAll('tr'));
+            rows.sort((a, b) => {
+                let va = (a.children[actualIdx]?.innerText || '').trim();
+                let vb = (b.children[actualIdx]?.innerText || '').trim();
+                if (type === 'num') {
+                    return (parseFloat(va) - parseFloat(vb)) * (isAsc ? 1 : -1);
+                }
+                return va.localeCompare(vb, 'vi', {sensitivity: 'base'}) * (isAsc ? 1 : -1);
+            });
+            rows.forEach(r => tbody.appendChild(r));
+        });
+    });
+
+    // ─── Search filter (client-side) ───
+    if (searchInput) {
+        searchInput.addEventListener('input', () => {
+            const q = searchInput.value.trim().toLowerCase();
+            tbody.querySelectorAll('tr').forEach(tr => {
+                const txt = tr.innerText.toLowerCase();
+                tr.style.display = (!q || txt.includes(q)) ? '' : 'none';
+            });
+        });
+    }
+})();
+</script>
+{% endblock %}
