@@ -1,0 +1,209 @@
+{% extends 'base.html' %}
+{% load widget_tweaks %}
+
+{% block title %}Tìm kiếm câu hỏi - Tư Vấn Sinh Viên{% endblock %}
+
+{% block extra_css %}
+<style>
+    .search-filters-card {
+        border: 1px solid var(--border);
+        border-radius: var(--r-lg);
+        box-shadow: var(--shadow-sm);
+        transition: all 0.3s ease;
+    }
+    .search-filters-card:hover {
+        box-shadow: var(--shadow);
+    }
+
+    .search-input-group {
+        border: 1px solid var(--border-2);
+        border-radius: var(--r);
+        overflow: hidden;
+        transition: border-color .15s, box-shadow .15s;
+        background: var(--bg);
+    }
+    .search-input-group:focus-within {
+        border-color: var(--brand-red);
+        box-shadow: 0 0 0 3px var(--brand-red-soft);
+    }
+    .search-input-group .form-control {
+        border: none !important;
+        padding-left: 0;
+    }
+    .search-input-group .form-control:focus {
+        box-shadow: none !important;
+    }
+    .search-input-group .input-group-text {
+        border: none;
+        background: transparent;
+        color: var(--text-3);
+        padding-left: 16px;
+        padding-right: 12px;
+    }
+
+    /* Synchronized question card: hover lift + accent stripe */
+    .q-card {
+        position: relative;
+        transition: all .25s ease;
+        background: var(--bg);
+        border: 1px solid var(--border);
+        border-radius: var(--r-lg);
+        padding: var(--sp-5);
+        margin-bottom: var(--sp-4);
+        box-shadow: var(--shadow-sm);
+    }
+    .q-card::before {
+        content: '';
+        position: absolute;
+        left: 0; top: 0; bottom: 0;
+        width: 3px;
+        background: linear-gradient(180deg, var(--brand-blue), var(--brand-red));
+        border-radius: 4px 0 0 4px;
+        transform: scaleY(0);
+        transform-origin: top;
+        transition: transform .3s;
+    }
+    .q-card:hover {
+        transform: translateX(4px);
+        box-shadow: 0 10px 28px rgba(11,63,140,0.10);
+        border-color: var(--brand-blue);
+    }
+    .q-card:hover::before { transform: scaleY(1); }
+
+    .q-card .q-title {
+        display: block;
+        font-size: 1.1rem;
+        font-weight: 700;
+        color: var(--text);
+        text-decoration: none;
+        margin-bottom: var(--sp-2);
+        line-height: 1.4;
+    }
+    .q-card .q-title:hover { color: var(--brand-red); text-decoration: none; }
+    .q-card .q-excerpt {
+        color: var(--text-2);
+        font-size: 14px;
+        line-height: 1.55;
+        margin-bottom: var(--sp-3);
+    }
+    .q-card .q-meta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: var(--sp-3);
+        align-items: center;
+        font-size: 12px;
+        color: var(--text-3);
+        border-top: 1px solid var(--border);
+        padding-top: var(--sp-3);
+    }
+    .q-card .q-meta .dot { color: var(--border-2); }
+    .q-card .q-meta i { color: var(--brand-blue); margin-right: 4px; }
+
+    /* Reveal fade-in upward */
+    .reveal-item {
+        opacity: 0;
+        transform: translateY(20px);
+        animation: revealIn 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+    @keyframes revealIn {
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <h2 class="mb-4 reveal-item" style="font-weight: 800; color: var(--brand-blue);">Tìm kiếm câu hỏi</h2>
+
+    <!-- Bộ lọc tìm kiếm -->
+    <div class="card search-filters-card mb-5 reveal-item" style="animation-delay: 0.05s;">
+        <div class="card-body p-4">
+            <h5 class="mb-4 d-flex align-items-center gap-2" style="font-weight: 700; color: var(--brand-blue);">
+                <i class="fas fa-filter text-red"></i> Bộ lọc tìm kiếm
+            </h5>
+            <form method="get" class="row g-3">
+                <div class="col-lg-6 col-md-12">
+                    <label for="{{ form.query.id_for_label }}" class="form-label">{{ form.query.label }}</label>
+                    <div class="input-group search-input-group">
+                        <span class="input-group-text"><i class="fas fa-search"></i></span>
+                        {{ form.query|add_class:"form-control" }}
+                    </div>
+                </div>
+                <div class="col-lg-3 col-md-6">
+                    <label for="{{ form.category.id_for_label }}" class="form-label">{{ form.category.label }}</label>
+                    {{ form.category|add_class:"form-select" }}
+                </div>
+                <div class="col-lg-3 col-md-6">
+                    <label for="{{ form.major.id_for_label }}" class="form-label">{{ form.major.label }}</label>
+                    {{ form.major|add_class:"form-select" }}
+                </div>
+                <div class="col-12 d-flex justify-content-end gap-2 mt-4">
+                    <button type="submit" class="btn btn-primary px-4">
+                        <i class="fas fa-search me-1"></i> Tìm kiếm
+                    </button>
+                    <a href="{% url 'search_questions' %}" class="btn btn-light px-4">
+                        <i class="fas fa-redo me-1"></i> Đặt lại
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Kết quả tìm kiếm -->
+    <div class="d-flex justify-content-between align-items-center mb-3 mt-4 reveal-item" style="animation-delay: 0.1s;">
+        <h4 class="mb-0" style="font-weight: 700; color: var(--brand-blue);">
+            <i class="fas fa-list-ul text-red me-2"></i>Kết quả tìm kiếm
+        </h4>
+        <span class="badge bg-secondary px-3 py-2" style="font-size: 13px;">Tổng số: {{ page_obj.paginator.count }}</span>
+    </div>
+
+    <div class="reveal-item" style="animation-delay: 0.15s;">
+        {% if questions %}
+            {% for question in questions %}
+            <article class="q-card">
+                <div class="d-flex justify-content-between align-items-start gap-3">
+                    <a href="{% url 'question_detail' question.id %}" class="q-title">
+                        {{ question.title }}
+                    </a>
+                    <span class="badge bg-success" style="white-space: nowrap;">Đã trả lời</span>
+                </div>
+                <p class="q-excerpt">{{ question.content|truncatechars:160 }}</p>
+                <div class="q-meta">
+                    {% if question.major %}
+                        <span><i class="fas fa-graduation-cap"></i> {{ question.major.name }}</span>
+                    {% endif %}
+                    {% if question.category %}
+                        {% if question.major %}<span class="dot">·</span>{% endif %}
+                        <span><i class="fas fa-tag"></i> {{ question.category.name }}</span>
+                    {% endif %}
+                    <span class="dot">·</span>
+                    <span title="Lượt xem"><i class="far fa-eye"></i> {{ question.views_count }}</span>
+                    <span class="dot">·</span>
+                    <span><i class="far fa-user"></i> {{ question.public_author_display }}</span>
+                    <span class="dot">·</span>
+                    <span><i class="far fa-calendar"></i> {{ question.created_at|date:"d/m/Y H:i" }}</span>
+                </div>
+            </article>
+            {% endfor %}
+        {% else %}
+            <div class="card border-0 shadow-sm mt-3">
+                <div class="card-body p-5 text-center">
+                    <div class="text-muted mb-3" style="font-size: 48px;">
+                        <i class="far fa-question-circle"></i>
+                    </div>
+                    <h5 class="text-muted mb-2">Không tìm thấy câu hỏi nào phù hợp</h5>
+                    <p class="text-muted small mb-4">Hãy thử nhập từ khóa khác hoặc điều chỉnh bộ lọc.</p>
+                    <a href="{% url 'chatbot:chat' %}" class="btn btn-blue btn-sm">
+                        <i class="fas fa-robot"></i> Hỏi trợ lý AI
+                    </a>
+                </div>
+            </div>
+        {% endif %}
+
+        {% include 'questions/_pagination.html' %}
+    </div>
+</div>
+{% endblock %} 

@@ -1,12 +1,14 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
+from django.views.decorators.http import require_POST
 from django.contrib import messages
 from django.db.models import Q, Count, F
 from django.http import HttpResponseForbidden
 from django.core.paginator import Paginator
-from .models import Question, Answer, Major, QuestionCategory, Department
-from .forms import QuestionForm, AnswerForm, QuestionSearchForm
+from .models import Question, Answer, Major, QuestionCategory, Department, QuestionFeedback
+from .forms import QuestionForm, AnswerForm, QuestionSearchForm, QuestionFeedbackForm
 from admin_panel.models import AdvisorProfile
+from notifications.models import Notification
 
 
 # ============================================================
@@ -126,11 +128,68 @@ def question_detail(request, pk):
         request.user,
     ).distinct().order_by('-views_count', '-created_at')[:4]
 
+    # Đánh giá câu trả lời (CSAT)
+    feedback = getattr(question, 'feedback', None)
+    can_rate = (
+        request.user.is_authenticated and
+        request.user.id == question.user_id and
+        question.status == 'answered'
+    )
+    feedback_form = None
+    if can_rate:
+        feedback_form = QuestionFeedbackForm(instance=feedback)
+
+    author_display = question.get_author_display(request.user)
+
     return render(request, 'questions/question_detail.html', {
         'question': question,
+        'author_display': author_display,
         'answers': answers,
         'related_questions': related_questions,
+        'feedback': feedback,
+        'can_rate': can_rate,
+        'feedback_form': feedback_form,
     })
+
+
+@login_required
+@require_POST
+def submit_question_feedback(request, pk):
+    """Người đặt câu hỏi đánh giá mức độ hài lòng về câu trả lời."""
+    question = get_object_or_404(Question, pk=pk)
+
+    if question.user_id != request.user.id:
+        return HttpResponseForbidden("Chỉ người đặt câu hỏi mới có quyền đánh giá câu trả lời.")
+
+    if question.status != 'answered':
+        messages.error(request, 'Chỉ có thể đánh giá câu hỏi đã có câu trả lời.')
+        return redirect('question_detail', pk=pk)
+
+    feedback_instance = getattr(question, 'feedback', None)
+    form = QuestionFeedbackForm(request.POST, instance=feedback_instance)
+
+    if form.is_valid():
+        feedback = form.save(commit=False)
+        feedback.question = question
+        feedback.user = request.user
+        feedback.save()
+
+        # Gửi thông báo tới tư vấn viên đã trả lời câu hỏi
+        first_answer = question.answers.first()
+        if first_answer and first_answer.user:
+            advisor_user = first_answer.user
+            Notification.notify(
+                recipient=advisor_user,
+                actor=request.user,
+                verb=f"Sinh viên đã đánh giá {feedback.rating}★ cho câu trả lời của bạn: {question.title[:45]}",
+                target_url=f"/admin-panel/questions/{question.id}/",
+            )
+
+        messages.success(request, 'Cảm ơn bạn đã gửi đánh giá! Ý kiến của bạn giúp nâng cao chất lượng tư vấn.')
+    else:
+        messages.error(request, 'Vui lòng chọn số sao đánh giá hợp lệ.')
+
+    return redirect('question_detail', pk=pk)
 
 
 def search_questions(request):

@@ -1,0 +1,77 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Thông báo của bạn · HCMUTE Tư Vấn{% endblock %}
+
+{% block content %}
+<div class="container py-4" style="max-width: 800px;">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h3 class="fw-bold mb-1 text-primary"><i class="fas fa-bell me-2"></i>Thông báo của bạn</h3>
+            <p class="text-muted mb-0 small">Cập nhật phản hồi từ ban tư vấn và hoạt động liên quan</p>
+        </div>
+        {% if page_obj %}
+        <form method="post" action="{% url 'notifications:mark_all_as_read' %}" class="d-inline">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-outline-secondary btn-sm rounded-pill">
+                <i class="fas fa-check-double me-1"></i>Đánh dấu tất cả đã đọc
+            </button>
+        </form>
+        {% endif %}
+    </div>
+
+    {% if page_obj %}
+    <div class="card shadow-sm border-0 rounded-4 overflow-hidden mb-4">
+        <div class="list-group list-group-flush">
+            {% for notif in page_obj %}
+            <a href="{% url 'notifications:mark_as_read' notif.pk %}" 
+               class="list-group-item list-group-item-action p-3 d-flex align-items-start gap-3 border-bottom {% if not notif.is_read %}bg-light border-start border-primary border-4{% endif %}">
+                <div class="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0" 
+                     style="width: 42px; height: 42px; background: {% if not notif.is_read %}#e3f2fd{% else %}#f1f3f5{% endif %}; color: {% if not notif.is_read %}#0d6efd{% else %}#6c757d{% endif %};">
+                    <i class="fas {% if 'đáp' in notif.verb or 'trả lời' in notif.verb %}fa-comment-dots{% elif 'đánh giá' in notif.verb or 'sao' in notif.verb %}fa-star{% else %}fa-bell{% endif %}"></i>
+                </div>
+                <div class="flex-grow-1">
+                    <div class="d-flex justify-content-between align-items-center mb-1">
+                        <span class="fw-semibold {% if not notif.is_read %}text-dark{% else %}text-secondary{% endif %}" style="font-size: 14.5px;">
+                            {{ notif.verb }}
+                        </span>
+                        {% if not notif.is_read %}
+                        <span class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill" style="font-size: 11px;">Mới</span>
+                        {% endif %}
+                    </div>
+                    <div class="small text-muted d-flex align-items-center gap-3">
+                        <span><i class="far fa-clock me-1"></i>{{ notif.created_at|date:"H:i - d/m/Y" }}</span>
+                        {% if notif.actor %}
+                        <span><i class="far fa-user me-1"></i>{{ notif.actor.get_full_name|default:notif.actor.username }}</span>
+                        {% endif %}
+                    </div>
+                </div>
+            </a>
+            {% endfor %}
+        </div>
+    </div>
+
+    {% if page_obj.has_other_pages %}
+    <nav aria-label="Page navigation">
+        <ul class="pagination justify-content-center">
+            {% if page_obj.has_previous %}
+            <li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}">« Trước</a></li>
+            {% endif %}
+            <li class="page-item active"><span class="page-link">Trang {{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span></li>
+            {% if page_obj.has_next %}
+            <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}">Sau »</a></li>
+            {% endif %}
+        </ul>
+    </nav>
+    {% endif %}
+
+    {% else %}
+    <div class="text-center py-5 bg-white rounded-4 shadow-sm">
+        <div class="mb-3 text-muted" style="font-size: 48px;"><i class="far fa-bell-slash"></i></div>
+        <h5 class="fw-semibold text-secondary">Bạn chưa có thông báo nào</h5>
+        <p class="text-muted small">Khi có câu trả lời mới từ ban tư vấn hoặc các hoạt động liên quan, thông báo sẽ xuất hiện ở đây.</p>
+        <a href="{% url 'home' %}" class="btn btn-primary btn-sm rounded-pill mt-2">Về trang chủ</a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

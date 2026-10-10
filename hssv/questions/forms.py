@@ -1,5 +1,5 @@
 from django import forms
-from .models import Question, Answer, Major, QuestionCategory
+from .models import Question, Answer, Major, QuestionCategory, QuestionFeedback
 
 
 class QuestionForm(forms.ModelForm):
@@ -15,9 +15,17 @@ class QuestionForm(forms.ModelForm):
         label='Quyền riêng tư',
     )
 
+    is_anonymous = forms.BooleanField(
+        required=False,
+        initial=False,
+        label='Đặt câu hỏi ẩn danh',
+        help_text='Bảo vệ danh tính: ẩn tên và thông tin của bạn trên câu hỏi công khai',
+        widget=forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+    )
+
     class Meta:
         model = Question
-        fields = ['title', 'content', 'major', 'category', 'is_public']
+        fields = ['title', 'content', 'major', 'category', 'is_public', 'is_anonymous']
         widgets = {
             'content': forms.Textarea(attrs={'rows': 5}),
         }
@@ -60,4 +68,18 @@ class QuestionSearchForm(forms.Form):
         required=False,
         empty_label="Tất cả ngành học"
     )
+
+
+class QuestionFeedbackForm(forms.ModelForm):
+    class Meta:
+        model = QuestionFeedback
+        fields = ['rating', 'comment']
+        widgets = {
+            'rating': forms.RadioSelect(choices=QuestionFeedback.RATING_CHOICES),
+            'comment': forms.Textarea(attrs={
+                'rows': 3,
+                'placeholder': 'Nhận xét của bạn về câu trả lời này (không bắt buộc)...',
+                'class': 'form-control',
+            }),
+        }
 

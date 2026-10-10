@@ -114,7 +114,7 @@
                 <span class="dot">·</span>
                 <span title="Lượt xem"><i class="far fa-eye"></i> {{ question.views_count }}</span>
                 <span class="dot">·</span>
-                <span><i class="far fa-user"></i> {{ question.user.get_full_name|default:question.user.username }}</span>
+                <span><i class="far fa-user"></i> {{ question.public_author_display }}</span>
                 <span class="dot">·</span>
                 <span><i class="far fa-calendar"></i> {{ question.created_at|date:"d/m/Y H:i" }}</span>
             </div>

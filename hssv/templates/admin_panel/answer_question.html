@@ -38,11 +38,25 @@
                     <i class="fas fa-user me-1"></i>
                     <strong>Người hỏi:</strong>
                     {{ question.user.get_full_name|default:question.user.username }}
+                    {% if question.user.student_id %}(MSSV: {{ question.user.student_id }}){% endif %}
+                    {% if question.is_anonymous %}
+                    <span class="badge bg-secondary ms-1" title="Sinh viên chọn ẩn danh với người dùng công khai">
+                        <i class="fas fa-user-secret"></i> Ẩn danh
+                    </span>
+                    {% endif %}
                 </p>
                 <p class="mb-1">
                     <i class="fas fa-clock me-1"></i>
                     <strong>Ngày tạo:</strong> {{ question.created_at|date:"d/m/Y H:i" }}
                 </p>
+                {% if question.feedback %}
+                <div class="mt-2 p-2 px-3 bg-warning-subtle border border-warning-subtle rounded-3">
+                    <div class="fw-bold text-dark small"><i class="fas fa-star text-warning me-1"></i> Sinh viên đánh giá câu trả lời: {{ question.feedback.rating }}/5★</div>
+                    {% if question.feedback.comment %}
+                    <div class="small text-muted fst-italic">"{{ question.feedback.comment }}"</div>
+                    {% endif %}
+                </div>
+                {% endif %}
             </div>
             <div class="col-md-6">
                 {% if question.category %}
@@ -120,7 +134,7 @@
         <form method="post">
             {% csrf_token %}
             <div class="mb-3">
-                <label for="{{ form.content.id_for_label }}" class="form-label">
+                <label for="{{ form.content.id_for_label}}" class="form-label">
                     {{ form.content.label }} <span class="text-danger">*</span>
                 </label>
                 {{ form.content.errors }}

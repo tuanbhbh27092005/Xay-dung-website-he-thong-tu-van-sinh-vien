@@ -385,6 +385,7 @@ def _handle_escalation(session, value, user) -> List:
         value = {}
 
     is_public = bool(value.get('is_public', True))
+    is_anonymous = bool(value.get('is_anonymous', False))
     initial = session.initial_question or ''
     title = (value.get('title') or initial[:120]).strip()
     content = (value.get('content') or initial or title).strip()
@@ -399,6 +400,7 @@ def _handle_escalation(session, value, user) -> List:
             major_id=session.collected_major_id,
             category_id=session.collected_category_id,
             is_public=is_public,
+            is_anonymous=is_anonymous,
             status='pending',
         )
     except Exception as e:
@@ -410,11 +412,12 @@ def _handle_escalation(session, value, user) -> List:
     session.save(update_fields=['escalated_to_advisor', 'state'])
 
     visibility = "công khai" if is_public else "riêng tư"
+    anon_tag = " - ẩn danh" if is_anonymous else ""
     return [
         _msg(
-            f"✅ Câu hỏi #{question.id} của bạn đã được gửi tới tư vấn viên ({visibility}). "
+            f"✅ Câu hỏi #{question.id} của bạn đã được gửi tới tư vấn viên ({visibility}{anon_tag}). "
             f"Bạn có thể theo dõi trong mục \"Hồ sơ → Câu hỏi của tôi\". "
-            f"Tư vấn viên sẽ phản hồi trong vòng 48 giờ."
+            f"Bạn sẽ nhận được thông báo ngay khi tư vấn viên phản hồi!"
         ),
         _msg(
             "Bạn cần hỏi vấn đề khác không?",

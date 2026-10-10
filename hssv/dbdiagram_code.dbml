@@ -1,0 +1,168 @@
+// ==========================================
+// DBML Schema - He Thong Tu Van Sinh Vien
+// Database: tuvansinhvien (MySQL 8.0)
+// Paste this code into https://dbdiagram.io/d
+// ==========================================
+
+Table accounts_customuser {
+  id bigint [pk, increment]
+  password varchar(128) [not null]
+  last_login datetime
+  is_superuser boolean [not null]
+  username varchar(150) [unique, not null]
+  first_name varchar(150) [not null]
+  last_name varchar(150) [not null]
+  email varchar(254) [not null]
+  is_staff boolean [not null]
+  is_active boolean [not null]
+  date_joined datetime [not null]
+  user_type varchar(20) [not null]
+  student_id varchar(20)
+  graduation_year int
+  phone_number varchar(15)
+  grade varchar(10)
+}
+
+Table admin_panel_advisorprofile {
+  id bigint [pk, increment]
+  role varchar(20) [not null]
+  academic_title varchar(10) [not null, default: '']
+  position varchar(100) [not null, default: '']
+  department_id bigint [ref: > questions_department.id]
+  user_id bigint [unique, not null, ref: > accounts_customuser.id]
+  avatar varchar(100)
+}
+
+Table chatbot_chatmessage {
+  id bigint [pk, increment]
+  role varchar(10) [not null]
+  content longtext [not null]
+  confidence decimal
+  retrieved_question_ids varchar(200) [not null]
+  needs_advisor boolean [not null]
+  created_at datetime [not null]
+  session_id bigint [not null, ref: > chatbot_chatsession.id]
+  metadata json
+}
+
+Table chatbot_chatsession {
+  id bigint [pk, increment]
+  session_key varchar(40) [not null]
+  started_at datetime [not null]
+  escalated_to_advisor boolean [not null]
+  user_id bigint [ref: > accounts_customuser.id]
+  collected_category_id int
+  collected_dept_id int
+  collected_major_id int
+  initial_question longtext [not null]
+  state varchar(30) [not null]
+}
+
+Table chatbot_contentreport {
+  id bigint [pk, increment]
+  source varchar(20) [not null]
+  snapshot_text longtext [not null]
+  matched_words varchar(300) [not null]
+  reason varchar(200) [not null]
+  status varchar(20) [not null]
+  reviewed_at datetime
+  admin_note longtext [not null]
+  created_at datetime [not null]
+  chat_message_id bigint [ref: > chatbot_chatmessage.id]
+  comment_id bigint [ref: > news_comment.id]
+  content_user_id bigint [ref: > accounts_customuser.id]
+  reporter_id bigint [ref: > accounts_customuser.id]
+  reviewed_by_id bigint [ref: > accounts_customuser.id]
+}
+
+Table chatbot_newsembedding {
+  id bigint [pk, increment]
+  embedding json [not null]
+  updated_at datetime [not null]
+  news_id bigint [unique, not null, ref: > news_news.id]
+}
+
+Table chatbot_questionembedding {
+  id bigint [pk, increment]
+  embedding json [not null]
+  updated_at datetime [not null]
+  question_id bigint [unique, not null, ref: > questions_question.id]
+}
+
+Table news_comment {
+  id bigint [pk, increment]
+  content longtext [not null]
+  is_hidden boolean [not null]
+  has_sensitive boolean [not null]
+  created_at datetime [not null]
+  user_id bigint [not null, ref: > accounts_customuser.id]
+  news_id bigint [not null, ref: > news_news.id]
+  parent_id bigint [ref: > news_comment.id]
+}
+
+Table news_news {
+  id bigint [pk, increment]
+  title varchar(200) [not null]
+  slug varchar(220) [unique, not null]
+  summary varchar(500) [not null]
+  content longtext [not null]
+  category varchar(20) [not null]
+  thumbnail_url varchar(500) [not null]
+  is_published boolean [not null]
+  views_count int [not null]
+  created_at datetime [not null]
+  updated_at datetime [not null]
+  author_id bigint [not null, ref: > accounts_customuser.id]
+  department_id bigint [ref: > questions_department.id]
+  is_featured boolean [not null, default: '0']
+  thumbnail_image varchar(100)
+}
+
+Table news_newslike {
+  id bigint [pk, increment]
+  created_at datetime [not null]
+  news_id bigint [unique, not null, ref: > news_news.id]
+  user_id bigint [unique, not null, ref: > accounts_customuser.id]
+}
+
+Table questions_answer {
+  id bigint [pk, increment]
+  content longtext [not null]
+  created_at datetime [not null]
+  updated_at datetime [not null]
+  user_id bigint [not null, ref: > accounts_customuser.id]
+  question_id bigint [not null, ref: > questions_question.id]
+}
+
+Table questions_department {
+  id bigint [pk, increment]
+  name varchar(100) [not null]
+  description longtext [not null]
+}
+
+Table questions_major {
+  id bigint [pk, increment]
+  name varchar(100) [not null]
+  description longtext [not null]
+  department_id bigint [not null, ref: > questions_department.id]
+}
+
+Table questions_question {
+  id bigint [pk, increment]
+  title varchar(200) [not null]
+  content longtext [not null]
+  status varchar(20) [not null]
+  created_at datetime [not null]
+  updated_at datetime [not null]
+  major_id bigint [ref: > questions_major.id]
+  user_id bigint [not null, ref: > accounts_customuser.id]
+  category_id bigint [ref: > questions_questioncategory.id]
+  is_public boolean [not null]
+  views_count int [not null, default: '0']
+}
+
+Table questions_questioncategory {
+  id bigint [pk, increment]
+  name varchar(100) [not null]
+  description longtext [not null]
+}

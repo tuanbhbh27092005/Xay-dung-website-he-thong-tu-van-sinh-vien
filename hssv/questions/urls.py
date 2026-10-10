@@ -6,6 +6,7 @@ urlpatterns = [
     path('ask/', views.ask_question, name='ask_question'),
     path('my-questions/', views.my_questions, name='my_questions'),
     path('question/<int:pk>/', views.question_detail, name='question_detail'),
+    path('question/<int:pk>/feedback/', views.submit_question_feedback, name='submit_question_feedback'),
     path('search/', views.search_questions, name='search_questions'),
     path('cau-hoi-thuong-gap/', views.popular_questions, name='popular_questions'),
     path('category/<int:category_id>/', views.category_questions, name='category_questions'),

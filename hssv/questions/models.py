@@ -60,6 +60,13 @@ class Question(models.Model):
                   "Riêng tư chỉ owner và tư vấn viên thấy."
     )
 
+    # ← FIELD MỚI: Cho phép đặt câu hỏi ẩn danh
+    is_anonymous = models.BooleanField(
+        default=False,
+        verbose_name="Đặt câu hỏi ẩn danh",
+        help_text="Ẩn danh tính với người dùng khác và trên các trang công khai."
+    )
+
     # ─── Counter cho trang chủ "câu hỏi được quan tâm nhất" ───
     views_count = models.PositiveIntegerField(
         default=0,
@@ -84,9 +91,69 @@ class Question(models.Model):
             return True
         return hasattr(user, 'advisorprofile') and user.advisorprofile is not None
 
+    def get_author_display(self, viewer=None):
+        """Trả về tên hiển thị của người đặt câu hỏi tuỳ theo quyền của viewer."""
+        if not self.is_anonymous:
+            return self.user.get_full_name() or self.user.username
+        # Nếu là câu hỏi ẩn danh:
+        if viewer and viewer.is_authenticated:
+            if viewer.id == self.user_id:
+                return "Bạn (Ẩn danh)"
+            if hasattr(viewer, 'advisorprofile') and viewer.advisorprofile is not None:
+                real_name = self.user.get_full_name() or self.user.username
+                student_id = f" - MSSV: {self.user.student_id}" if self.user.student_id else ""
+                return f"{real_name}{student_id} [Ẩn danh]"
+        return "Sinh viên ẩn danh"
+
+    @property
+    def public_author_display(self):
+        """Tên hiển thị mặc định cho giao diện công khai."""
+        return self.get_author_display()
+
     class Meta:
         verbose_name = "Câu hỏi"
         verbose_name_plural = "Câu hỏi"
+        ordering = ['-created_at']
+
+
+class QuestionFeedback(models.Model):
+    RATING_CHOICES = (
+        (1, '1 sao - Rất không hài lòng'),
+        (2, '2 sao - Không hài lòng'),
+        (3, '3 sao - Bình thường'),
+        (4, '4 sao - Hài lòng'),
+        (5, '5 sao - Rất hài lòng'),
+    )
+
+    question = models.OneToOneField(
+        Question,
+        on_delete=models.CASCADE,
+        related_name='feedback',
+        verbose_name="Câu hỏi"
+    )
+    user = models.ForeignKey(
+        CustomUser,
+        on_delete=models.CASCADE,
+        verbose_name="Người đánh giá"
+    )
+    rating = models.PositiveSmallIntegerField(
+        choices=RATING_CHOICES,
+        verbose_name="Điểm đánh giá (sao)"
+    )
+    comment = models.TextField(
+        blank=True,
+        default='',
+        verbose_name="Nhận xét / Góp ý"
+    )
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name="Ngày đánh giá")
+    updated_at = models.DateTimeField(auto_now=True, verbose_name="Ngày cập nhật")
+
+    def __str__(self):
+        return f"Đánh giá {self.rating}★ cho: {self.question.title[:30]}"
+
+    class Meta:
+        verbose_name = "Đánh giá câu trả lời"
+        verbose_name_plural = "Đánh giá câu trả lời"
         ordering = ['-created_at']
 
 

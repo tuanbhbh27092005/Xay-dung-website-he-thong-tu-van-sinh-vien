@@ -35,6 +35,7 @@ urlpatterns = [
     path('stats/', include('stats.urls')),
     path('chatbot/', include('chatbot.urls')),
     path('news/', include('news.urls')),
+    path('notifications/', include('notifications.urls')),
 ]
 
 if settings.DEBUG:

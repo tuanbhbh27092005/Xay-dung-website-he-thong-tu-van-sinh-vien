@@ -259,7 +259,14 @@
                             </span>
                             {% endif %}
                         </td>
-                        <td class="col-user">{{ question.user.get_full_name|default:question.user.username }}</td>
+                        <td class="col-user">
+                            <div>{{ question.user.get_full_name|default:question.user.username }}</div>
+                            {% if question.is_anonymous %}
+                            <span class="badge bg-secondary mt-1" style="font-size: 10px;" title="Sinh viên đặt ẩn danh với công chúng">
+                                <i class="fas fa-user-secret"></i> Ẩn danh
+                            </span>
+                            {% endif %}
+                        </td>
                         <td class="col-cat">
                             {% if question.category %}
                             <span class="badge bg-info">{{ question.category.name }}</span>
@@ -286,6 +293,12 @@
                             <span class="badge bg-warning">Chưa trả lời</span>
                             {% else %}
                             <span class="badge bg-success">Đã trả lời</span>
+                            {% endif %}
+                            {% if question.feedback %}
+                            <br>
+                            <span class="badge bg-warning text-dark mt-1" title="Sinh viên đánh giá: {{ question.feedback.rating }}/5 sao">
+                                <i class="fas fa-star"></i> {{ question.feedback.rating }}/5★
+                            </span>
                             {% endif %}
                         </td>
                         <td class="col-date">{{ question.created_at|date:"d/m/y H:i" }}</td>

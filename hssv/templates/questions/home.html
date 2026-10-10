@@ -300,6 +300,12 @@
                             {% else %}
                                 <span class="badge bg-success">Đã trả lời</span>
                             {% endif %}
+                            {% if question.is_anonymous %}
+                                <span class="badge bg-secondary-subtle text-secondary border"><i class="fas fa-user-secret"></i> Ẩn danh</span>
+                            {% endif %}
+                            {% if question.feedback %}
+                                <span class="badge bg-warning text-dark"><i class="fas fa-star"></i> {{ question.feedback.rating }}★</span>
+                            {% endif %}
                             {% if question.major %}
                                 <span><i class="fas fa-graduation-cap"></i>{{ question.major.name }}</span>
                             {% endif %}

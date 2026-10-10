@@ -160,7 +160,7 @@
                             <span><i class="fas fa-tag"></i>{{ question.category.name }}</span>
                             <span class="dot">·</span>
                         {% endif %}
-                        <span><i class="far fa-user"></i>{{ question.user.get_full_name|default:question.user.username }}</span>
+                        <span><i class="far fa-user"></i>{{ question.public_author_display }}</span>
                         <span class="dot">·</span>
                         <span><i class="far fa-calendar"></i>{{ question.created_at|date:"d/m/Y" }}</span>
                     </div>

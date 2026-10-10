@@ -10,6 +10,7 @@ from questions.forms import QuestionForm, AnswerForm
 from accounts.models import CustomUser
 from .models import AdvisorProfile
 from .forms import DepartmentForm, MajorForm, CategoryForm, AdminAnswerForm, AdvisorProfileForm
+from notifications.models import Notification
 
 # SLA: câu hỏi pending quá X giờ → highlight đỏ ở manage_questions
 OVERDUE_HOURS = 12
@@ -204,6 +205,16 @@ def answer_question(request, pk):
             # Cập nhật trạng thái câu hỏi
             question.status = 'answered'
             question.save()
+
+            # Gửi thông báo tới người đặt câu hỏi
+            advisor_title = getattr(request.user, 'advisorprofile', None)
+            display_name = advisor_title.display_name if advisor_title else (request.user.get_full_name() or request.user.username)
+            Notification.notify(
+                recipient=question.user,
+                actor=request.user,
+                verb=f"Tư vấn viên {display_name} đã trả lời câu hỏi của bạn: {question.title[:45]}",
+                target_url=f"/question/{question.id}/",
+            )
             
             messages.success(request, 'Câu trả lời của bạn đã được gửi thành công!')
             return redirect('manage_questions')

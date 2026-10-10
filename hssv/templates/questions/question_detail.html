@@ -39,7 +39,12 @@
             </div>
             <div class="text-muted">
                 <small>
-                    <i class="fas fa-user me-1"></i> {{ question.user.get_full_name|default:question.user.username }}
+                    <i class="fas fa-user me-1"></i> {{ author_display }}
+                    {% if question.is_anonymous %}
+                    <span class="badge bg-secondary-subtle text-secondary border ms-1" title="Đặt câu hỏi ẩn danh">
+                        <i class="fas fa-user-secret me-1"></i>Ẩn danh
+                    </span>
+                    {% endif %}
                 </small>
                 <small class="ms-2">
                     <i class="fas fa-clock me-1"></i> {{ question.created_at|date:"d/m/Y H:i" }}
@@ -113,10 +118,123 @@
     </div>
 </div>
 
-{# ─── KHỐI FORM TRẢ LỜI ĐÃ BỊ XÓA ─── #}
-{# Theo yêu cầu: "Trả lời câu hỏi sinh viên chỉ trả lời được ở mục quản lý câu hỏi #}
-{# dashboard của ban tư vấn và admin". #}
-{# Form đã được di chuyển sang admin_panel/answer_question.html. #}
+{# ─── ĐÁNH GIÁ CHẤT LƯỢNG CÂU TRẢ LỜI (CSAT) ─── #}
+{% if question.status == 'answered' %}
+<div class="card mb-4 border-0 shadow-sm rounded-4 overflow-hidden">
+    <div class="card-header bg-warning bg-opacity-10 py-3 border-0 d-flex justify-content-between align-items-center">
+        <h5 class="mb-0 text-warning-emphasis fw-bold">
+            <i class="fas fa-star me-2 text-warning"></i>Đánh giá câu trả lời
+        </h5>
+        {% if feedback %}
+        <span class="badge bg-warning text-dark px-3 py-2 rounded-pill fw-bold">
+            {{ feedback.rating }}/5 sao
+        </span>
+        {% endif %}
+    </div>
+    <div class="card-body p-4">
+        {% if feedback %}
+            <div class="d-flex align-items-start gap-3">
+                <div class="fs-1 text-warning flex-shrink-0">
+                    {% for i in "12345" %}
+                        {% if forloop.counter <= feedback.rating %}
+                            <i class="fas fa-star"></i>
+                        {% else %}
+                            <i class="far fa-star text-muted"></i>
+                        {% endif %}
+                    {% endfor %}
+                </div>
+                <div class="flex-grow-1">
+                    <h6 class="fw-bold mb-1">
+                        {% if feedback.rating >= 4 %}
+                            Rất hài lòng với câu trả lời
+                        {% elif feedback.rating == 3 %}
+                            Hài lòng ở mức trung bình
+                        {% else %}
+                            Chưa hài lòng với câu trả lời
+                        {% endif %}
+                    </h6>
+                    {% if feedback.comment %}
+                    <p class="text-secondary mb-2 fst-italic">"{{ feedback.comment }}"</p>
+                    {% endif %}
+                    <div class="text-muted small">
+                        Đánh giá vào lúc {{ feedback.created_at|date:"d/m/Y H:i" }}
+                        {% if feedback.updated_at != feedback.created_at %}
+                        · Đã cập nhật
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            {% if can_rate %}
+            <div class="mt-3 pt-3 border-top text-end">
+                <button class="btn btn-outline-secondary btn-sm rounded-pill" type="button" data-bs-toggle="collapse" data-bs-target="#editRatingForm">
+                    <i class="fas fa-edit me-1"></i>Thay đổi đánh giá
+                </button>
+            </div>
+            <div class="collapse mt-3" id="editRatingForm">
+                <form method="post" action="{% url 'submit_question_feedback' question.id %}" class="bg-light p-3 rounded-3">
+                    {% csrf_token %}
+                    <label class="form-label fw-bold small text-muted">Chọn lại số sao:</label>
+                    <div class="rating-stars mb-3 d-flex gap-3 flex-wrap">
+                        {% for choice in feedback_form.rating.field.choices %}
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="rating" id="rate_edit_{{ choice.0 }}" value="{{ choice.0 }}" {% if feedback.rating == choice.0 %}checked{% endif %} required>
+                            <label class="form-check-label small" for="rate_edit_{{ choice.0 }}">
+                                {{ choice.1 }}
+                            </label>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold small text-muted">Nhận xét mới:</label>
+                        <textarea name="comment" class="form-control" rows="2" placeholder="Cập nhật nhận xét của bạn...">{{ feedback.comment }}</textarea>
+                    </div>
+                    <button type="submit" class="btn btn-warning btn-sm text-dark fw-bold rounded-pill">
+                        Cập nhật đánh giá
+                    </button>
+                </form>
+            </div>
+            {% endif %}
+
+        {% elif can_rate %}
+            <div class="text-center py-2">
+                <h6 class="fw-bold text-dark mb-2">Bạn có hài lòng với câu trả lời của ban tư vấn không?</h6>
+                <p class="text-muted small mb-4">Đánh giá của bạn giúp ban tư vấn nâng cao chất lượng hỗ trợ sinh viên.</p>
+
+                <form method="post" action="{% url 'submit_question_feedback' question.id %}" style="max-width: 600px; margin: 0 auto;">
+                    {% csrf_token %}
+                    <div class="d-flex justify-content-center gap-2 mb-4 flex-wrap">
+                        {% for choice in feedback_form.rating.field.choices %}
+                        <div class="rating-box text-center">
+                            <input type="radio" class="btn-check" name="rating" id="rate_{{ choice.0 }}" value="{{ choice.0 }}" required>
+                            <label class="btn btn-outline-warning text-dark border-2 p-2 px-3 rounded-3 d-flex flex-column align-items-center gap-1" for="rate_{{ choice.0 }}" style="min-width: 90px; cursor: pointer;">
+                                <span class="fs-4">
+                                    {% if choice.0 == 5 %}😍{% elif choice.0 == 4 %}😊{% elif choice.0 == 3 %}😐{% elif choice.0 == 2 %}😕{% else %}😞{% endif %}
+                                </span>
+                                <span class="fw-bold" style="font-size: 13px;">{{ choice.0 }} ★</span>
+                            </label>
+                        </div>
+                        {% endfor %}
+                    </div>
+
+                    <div class="mb-3">
+                        <textarea name="comment" class="form-control rounded-3" rows="3" placeholder="Nhận xét hoặc góp ý thêm để ban tư vấn phục vụ tốt hơn (không bắt buộc)..."></textarea>
+                    </div>
+
+                    <button type="submit" class="btn btn-warning px-4 py-2 text-dark fw-bold rounded-pill shadow-sm">
+                        <i class="fas fa-paper-plane me-1"></i> Gửi đánh giá
+                    </button>
+                </form>
+            </div>
+        {% else %}
+            <div class="text-center py-3 text-muted small">
+                <i class="far fa-smile text-secondary d-block mb-1 fs-4"></i>
+                Chưa có đánh giá nào cho câu trả lời này.
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endif %}
 
 <div class="mt-4">
     <h5 class="mb-3">Câu hỏi liên quan</h5>
