@@ -62,8 +62,12 @@
                 Tìm kiếm
             </a></li>
             <li><a href="{% url 'advisor_list' %}"
-                   class="{% if request.resolver_match.url_name == 'advisor_list' %}active{% endif %}">
+                   class="{% if request.resolver_match.url_name == 'advisor_list' and request.resolver_match.namespace != 'appointments' %}active{% endif %}">
                 Sổ tay BTV
+            </a></li>
+            <li><a href="{% url 'appointments:advisor_list' %}"
+                   class="{% if request.resolver_match.namespace == 'appointments' and 'manage' not in request.resolver_match.url_name %}active{% endif %}">
+                <i class="fas fa-calendar-check text-primary me-1"></i> Đặt lịch 1-1
             </a></li>
             <li><a href="{% url 'chatbot:chat' %}"
                    class="{% if request.resolver_match.namespace == 'chatbot' %}active{% endif %}"
@@ -153,6 +157,9 @@
                     {% else %}
                         <li><a class="dropdown-item" href="{% url 'profile' %}">
                             <i class="far fa-user me-2"></i>Hồ sơ &amp; Câu hỏi của tôi
+                        </a></li>
+                        <li><a class="dropdown-item" href="{% url 'appointments:student_appointments' %}">
+                            <i class="fas fa-calendar-check me-2"></i>Lịch hẹn tư vấn 1-1
                         </a></li>
                         <li><a class="dropdown-item" href="{% url 'chatbot:history' %}">
                             <i class="far fa-comments me-2"></i>Lịch sử chat với AI

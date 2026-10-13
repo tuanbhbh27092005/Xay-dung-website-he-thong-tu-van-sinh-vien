@@ -1,0 +1,175 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Chọn khung giờ hẹn với {{ advisor.display_name }} - HCMUTE{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'appointments:advisor_list' %}">Đặt lịch tư vấn</a></li>
+            <li class="breadcrumb-item active">{{ advisor.display_name }}</li>
+        </ol>
+    </nav>
+
+    <div class="row g-4">
+        {# THÔNG TIN CỐ VẤN #}
+        <div class="col-lg-4">
+            <div class="card border-0 shadow-sm sticky-top" style="top: 85px; border-radius: 14px;">
+                <div class="card-body p-4 text-center">
+                    {% if advisor.avatar %}
+                        <img src="{{ advisor.avatar.url }}" alt="{{ advisor.display_name }}" class="rounded-circle object-fit-cover shadow-sm mb-3" style="width: 90px; height: 90px;">
+                    {% else %}
+                        <div class="rounded-circle bg-primary bg-opacity-10 text-primary d-inline-flex align-items-center justify-content-center fw-bold fs-2 mb-3" style="width: 90px; height: 90px;">
+                            {{ advisor.user.first_name.0|default:advisor.user.username.0|upper }}
+                        </div>
+                    {% endif %}
+                    <h5 class="fw-bold mb-1">{{ advisor.display_name }}</h5>
+                    <p class="text-muted small mb-2">{{ advisor.position|default:"Cố vấn học tập" }}</p>
+                    <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-3 py-1 mb-3">
+                        {{ advisor.department.name|default:"Khoa / Đơn vị" }}
+                    </span>
+
+                    <hr class="my-3">
+
+                    <div class="text-start small text-muted">
+                        <p class="mb-2"><i class="fas fa-envelope me-2 text-secondary"></i>{{ advisor.user.email|default:"Chưa có email" }}</p>
+                        <p class="mb-2"><i class="fas fa-info-circle me-2 text-secondary"></i><strong>Lưu ý:</strong> Vui lòng đặt hẹn trước tối thiểu 24 giờ để Thầy/Cô chuẩn bị lịch tiếp tốt nhất.</p>
+                        <p class="mb-0"><i class="fas fa-handshake me-2 text-secondary"></i>Hình thức hỗ trợ: <strong>Gặp trực tiếp</strong> tại văn phòng hoặc <strong>Google Meet</strong>.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {# CHỌN NGÀY VÀ KHUNG GIỜ #}
+        <div class="col-lg-8">
+            <div class="card border-0 shadow-sm mb-4" style="border-radius: 14px;">
+                <div class="card-body p-4">
+                    <h5 class="fw-bold mb-3 text-dark">
+                        <i class="fas fa-calendar-day me-2 text-primary"></i>1. Chọn ngày bạn muốn gặp
+                    </h5>
+
+                    <form method="get" class="row g-3 align-items-center mb-4">
+                        <div class="col-sm-8 col-md-6">
+                            <input type="date" name="date" class="form-control"
+                                   value="{{ selected_date|date:'Y-m-d' }}"
+                                   min="{{ min_date }}" max="{{ max_date }}"
+                                   onchange="this.form.submit()">
+                        </div>
+                        <div class="col-sm-4 col-md-6">
+                            <span class="text-muted small">
+                                <i class="fas fa-calendar me-1"></i>{{ selected_date|date:"l, d/m/Y" }}
+                            </span>
+                        </div>
+                    </form>
+
+                    <h5 class="fw-bold mb-3 text-dark">
+                        <i class="fas fa-clock me-2 text-primary"></i>2. Khung giờ trống trong ngày
+                    </h5>
+
+                    {% if slots %}
+                        <div class="row g-2 mb-4">
+                            {% for slot in slots %}
+                                <div class="col-6 col-sm-4 col-md-3">
+                                    {% if slot.is_booked %}
+                                        <button type="button" class="btn btn-outline-secondary w-100 py-2 disabled" style="opacity: 0.5;" title="Khung giờ này đã có người đặt">
+                                            <div class="fw-bold">{{ slot.start_time }} - {{ slot.end_time }}</div>
+                                            <span class="badge bg-secondary" style="font-size: 10px;">Đã kín</span>
+                                        </button>
+                                    {% else %}
+                                        <button type="button" class="btn btn-outline-primary w-100 py-2 slot-btn"
+                                                data-start="{{ slot.start_time }}"
+                                                data-end="{{ slot.end_time }}"
+                                                data-schedule-id="{{ slot.schedule_id }}"
+                                                onclick="selectSlot(this)">
+                                            <div class="fw-bold">{{ slot.start_time }} - {{ slot.end_time }}</div>
+                                            <span class="badge bg-success" style="font-size: 10px;">Còn trống</span>
+                                        </button>
+                                    {% endif %}
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="alert alert-warning d-flex align-items-center mb-4" role="alert">
+                            <i class="fas fa-exclamation-triangle me-2 fs-5"></i>
+                            <div>
+                                Cố vấn không có lịch tiếp sinh viên vào ngày <strong>{{ selected_date|date:"l, d/m/Y" }}</strong>. Vui lòng chọn một ngày khác trong tuần!
+                            </div>
+                        </div>
+                    {% endif %}
+
+                    <hr class="my-4">
+
+                    <h5 class="fw-bold mb-3 text-dark">
+                        <i class="fas fa-edit me-2 text-primary"></i>3. Điền thông tin đặt lịch
+                    </h5>
+
+                    <form method="post" id="bookingForm">
+                        {% csrf_token %}
+                        <input type="hidden" name="start_time" id="chosenStartTime" required>
+                        <input type="hidden" name="end_time" id="chosenEndTime" required>
+                        <input type="hidden" name="schedule_id" id="chosenScheduleId">
+
+                        <div class="alert alert-info py-2 px-3 mb-3" id="selectedSlotInfo" style="display: none;">
+                            <i class="fas fa-check-circle me-1"></i> Khung giờ đã chọn:
+                            <strong id="slotDisplay" class="text-primary"></strong> ({{ selected_date|date:"d/m/Y" }})
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Hình thức tư vấn <span class="text-danger">*</span></label>
+                            {{ form.meeting_type }}
+                            <div class="form-text">
+                                • <strong>Trực tiếp:</strong> Gặp tại Văn phòng khoa của Cố vấn.<br>
+                                • <strong>Online:</strong> Cố vấn sẽ gửi Link Google Meet trong phần thông báo sau khi xác nhận.
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Chủ đề cần tư vấn <span class="text-danger">*</span></label>
+                            {{ form.topic }}
+                        </div>
+
+                        <div class="mb-4">
+                            <label class="form-label fw-semibold">Mô tả chi tiết câu hỏi / khó khăn</label>
+                            {{ form.student_notes }}
+                        </div>
+
+                        <div class="d-grid">
+                            <button type="submit" id="btnSubmit" class="btn btn-primary btn-lg fw-semibold" disabled>
+                                <i class="fas fa-check-circle me-1"></i>Xác nhận đăng ký lịch hẹn
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function selectSlot(btn) {
+    // Xóa active các nút khác
+    document.querySelectorAll('.slot-btn').forEach(b => {
+        b.classList.remove('btn-primary', 'text-white');
+        b.classList.add('btn-outline-primary');
+    });
+
+    // Active nút được chọn
+    btn.classList.remove('btn-outline-primary');
+    btn.classList.add('btn-primary', 'text-white');
+
+    const start = btn.getAttribute('data-start');
+    const end = btn.getAttribute('data-end');
+    const scheduleId = btn.getAttribute('data-schedule-id');
+
+    document.getElementById('chosenStartTime').value = start;
+    document.getElementById('chosenEndTime').value = end;
+    document.getElementById('chosenScheduleId').value = scheduleId;
+
+    document.getElementById('slotDisplay').innerText = start + ' - ' + end;
+    document.getElementById('selectedSlotInfo').style.display = 'block';
+
+    document.getElementById('btnSubmit').removeAttribute('disabled');
+}
+</script>
+{% endblock %}

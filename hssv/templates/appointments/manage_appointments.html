@@ -1,0 +1,160 @@
+{% extends 'admin_panel/base_admin.html' %}
+{% load static %}
+
+{% block title %}Quản lý Lịch hẹn tư vấn 1-1 - Ban Cố Vấn{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h3 class="fw-bold text-dark mb-1">
+                <i class="fas fa-calendar-check text-primary me-2"></i>Quản lý Lịch hẹn tư vấn 1-1
+            </h3>
+            <p class="text-muted mb-0">Theo dõi, xác nhận và cập nhật link Google Meet / phòng trực tiếp cho sinh viên.</p>
+        </div>
+        <div>
+            <a href="{% url 'appointments:schedule_settings' %}" class="btn btn-outline-primary">
+                <i class="fas fa-calendar-plus me-1"></i>Cài đặt Khung giờ tiếp sinh viên
+            </a>
+        </div>
+    </div>
+
+    {# THỐNG KÊ NHANH #}
+    <div class="row g-3 mb-4">
+        <div class="col-sm-6 col-xl-3">
+            <a href="{% url 'appointments:manage_appointments' %}" class="text-decoration-none">
+                <div class="card border-0 shadow-sm p-3" style="border-radius: 12px;">
+                    <div class="d-flex align-items-center justify-content-between">
+                        <div>
+                            <div class="text-muted small fw-medium">Tất cả lịch hẹn</div>
+                            <div class="fs-4 fw-bold text-dark">{{ appointments.count }}</div>
+                        </div>
+                        <div class="rounded-circle bg-light p-3 text-secondary"><i class="fas fa-list fa-lg"></i></div>
+                    </div>
+                </div>
+            </a>
+        </div>
+        <div class="col-sm-6 col-xl-3">
+            <a href="{% url 'appointments:manage_appointments' %}?status=pending" class="text-decoration-none">
+                <div class="card border-0 shadow-sm p-3 border-start border-warning border-4" style="border-radius: 12px;">
+                    <div class="d-flex align-items-center justify-content-between">
+                        <div>
+                            <div class="text-muted small fw-medium">Chờ xác nhận</div>
+                            <div class="fs-4 fw-bold text-warning">{{ pending_count }}</div>
+                        </div>
+                        <div class="rounded-circle bg-warning bg-opacity-10 p-3 text-warning"><i class="fas fa-hourglass-half fa-lg"></i></div>
+                    </div>
+                </div>
+            </a>
+        </div>
+        <div class="col-sm-6 col-xl-3">
+            <a href="{% url 'appointments:manage_appointments' %}?status=confirmed" class="text-decoration-none">
+                <div class="card border-0 shadow-sm p-3 border-start border-primary border-4" style="border-radius: 12px;">
+                    <div class="d-flex align-items-center justify-content-between">
+                        <div>
+                            <div class="text-muted small fw-medium">Đã xác nhận</div>
+                            <div class="fs-4 fw-bold text-primary">{{ confirmed_count }}</div>
+                        </div>
+                        <div class="rounded-circle bg-primary bg-opacity-10 p-3 text-primary"><i class="fas fa-calendar-check fa-lg"></i></div>
+                    </div>
+                </div>
+            </a>
+        </div>
+        <div class="col-sm-6 col-xl-3">
+            <a href="{% url 'appointments:manage_appointments' %}?status=completed" class="text-decoration-none">
+                <div class="card border-0 shadow-sm p-3 border-start border-success border-4" style="border-radius: 12px;">
+                    <div class="d-flex align-items-center justify-content-between">
+                        <div>
+                            <div class="text-muted small fw-medium">Đã hoàn thành</div>
+                            <div class="fs-4 fw-bold text-success">{{ completed_count }}</div>
+                        </div>
+                        <div class="rounded-circle bg-success bg-opacity-10 p-3 text-success"><i class="fas fa-circle-check fa-lg"></i></div>
+                    </div>
+                </div>
+            </a>
+        </div>
+    </div>
+
+    {# DANH SÁCH LỊCH HẸN #}
+    <div class="card border-0 shadow-sm" style="border-radius: 14px;">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th class="ps-4">Sinh viên</th>
+                            <th>Ngày &amp; Giờ</th>
+                            <th>Hình thức</th>
+                            <th>Chủ đề tư vấn</th>
+                            <th>Địa điểm / Meet</th>
+                            <th>Trạng thái</th>
+                            <th class="text-end pe-4">Thao tác</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for app in appointments %}
+                        <tr>
+                            <td class="ps-4">
+                                <div class="fw-bold text-dark">{{ app.student.get_full_name|default:app.student.username }}</div>
+                                <div class="text-muted small">
+                                    MSSV: {{ app.student.student_id|default:"N/A" }} | {{ app.student.email }}
+                                </div>
+                            </td>
+                            <td>
+                                <div class="fw-semibold text-dark">{{ app.date|date:"d/m/Y" }}</div>
+                                <div class="text-muted small">{{ app.start_time|time:"H:i" }} - {{ app.end_time|time:"H:i" }}</div>
+                            </td>
+                            <td>
+                                <span class="badge bg-light text-secondary border">
+                                    {{ app.get_meeting_type_display }}
+                                </span>
+                            </td>
+                            <td>
+                                <div class="fw-semibold text-truncate" style="max-width: 250px;" title="{{ app.topic }}">
+                                    {{ app.topic }}
+                                </div>
+                                {% if app.student_notes %}
+                                <div class="text-muted small text-truncate" style="max-width: 250px;" title="{{ app.student_notes }}">
+                                    {{ app.student_notes }}
+                                </div>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if app.location_or_link %}
+                                    {% if 'http' in app.location_or_link %}
+                                        <a href="{{ app.location_or_link }}" target="_blank" class="small text-primary text-decoration-underline">
+                                            Link Meet <i class="fas fa-external-link-alt"></i>
+                                        </a>
+                                    {% else %}
+                                        <span class="small text-dark fw-medium">{{ app.location_or_link }}</span>
+                                    {% endif %}
+                                {% else %}
+                                    <span class="text-muted small fst-italic">Chưa cấp</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <span class="badge {{ app.get_status_badge }} px-2 py-1">
+                                    {{ app.get_status_display }}
+                                </span>
+                            </td>
+                            <td class="text-end pe-4">
+                                <a href="{% url 'appointments:update_appointment' app.id %}" class="btn btn-sm btn-outline-primary" title="Cập nhật trạng thái / Gán link Meet">
+                                    <i class="fas fa-pen-to-square me-1"></i>Xử lý
+                                </a>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="7" class="text-center py-5 text-muted">
+                                <i class="fas fa-calendar-xmark fa-2x mb-2 d-block text-secondary"></i>
+                                Chưa có lịch hẹn nào phù hợp.
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

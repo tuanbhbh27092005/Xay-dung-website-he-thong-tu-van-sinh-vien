@@ -43,6 +43,14 @@
            class="side-link {% if request.resolver_match.url_name == 'manage_questions' %}active{% endif %}">
             <i class="far fa-comment-dots"></i> Quản lý câu hỏi
         </a>
+        <a href="{% url 'appointments:manage_appointments' %}"
+           class="side-link {% if request.resolver_match.namespace == 'appointments' and 'settings' not in request.resolver_match.url_name %}active{% endif %}">
+            <i class="fas fa-calendar-check"></i> Lịch hẹn tư vấn 1-1
+        </a>
+        <a href="{% url 'appointments:schedule_settings' %}"
+           class="side-link {% if request.resolver_match.namespace == 'appointments' and 'settings' in request.resolver_match.url_name %}active{% endif %}">
+            <i class="fas fa-clock"></i> Cài đặt ca tiếp SV
+        </a>
 
         {# ─── PHASE C: NỘI DUNG (NEWS) - dành cho cả admin và advisor ─── #}
         <div class="side-section">Nội dung</div>

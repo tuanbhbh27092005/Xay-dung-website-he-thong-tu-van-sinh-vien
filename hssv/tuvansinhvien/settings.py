@@ -49,6 +49,7 @@ INSTALLED_APPS = [
     'chatbot',
     'news',
     'notifications',
+    'appointments',
 ]
 
 MIDDLEWARE = [

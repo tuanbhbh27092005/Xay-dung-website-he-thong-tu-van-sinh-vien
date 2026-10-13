@@ -1,0 +1,29 @@
+{% extends 'base.html' %}
+
+{% block title %}Hủy lịch hẹn tư vấn - HCMUTE{% endblock %}
+
+{% block content %}
+<div class="container py-5" style="max-width: 600px;">
+    <div class="card border-0 shadow-sm" style="border-radius: 14px;">
+        <div class="card-body p-4 text-center">
+            <i class="fas fa-calendar-times text-danger fa-3x mb-3"></i>
+            <h4 class="fw-bold mb-2">Xác nhận hủy lịch hẹn?</h4>
+            <p class="text-muted mb-4">
+                Bạn đang yêu cầu hủy buổi hẹn tư vấn với <strong>{{ appointment.advisor.display_name }}</strong> vào ngày <strong>{{ appointment.date|date:"d/m/Y" }} ({{ appointment.start_time|time:"H:i" }} - {{ appointment.end_time|time:"H:i" }})</strong>.
+            </p>
+
+            <form method="post" class="text-start">
+                {% csrf_token %}
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">Lý do hủy (nếu có)</label>
+                    <textarea name="cancel_reason" rows="3" class="form-control" placeholder="Vd: Em bận lịch thi đột xuất / Đã giải quyết được thắc mắc..."></textarea>
+                </div>
+                <div class="d-flex gap-2 justify-content-end">
+                    <a href="{% url 'appointments:student_appointments' %}" class="btn btn-secondary">Quay lại</a>
+                    <button type="submit" class="btn btn-danger fw-semibold">Xác nhận hủy</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

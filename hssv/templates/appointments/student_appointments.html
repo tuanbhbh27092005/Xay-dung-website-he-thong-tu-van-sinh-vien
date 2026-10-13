@@ -1,0 +1,115 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Lịch hẹn tư vấn của tôi - HCMUTE{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="fw-bold mb-1 text-primary">
+                <i class="fas fa-clock-rotate-left me-2"></i>Lịch hẹn tư vấn 1-1 của tôi
+            </h2>
+            <p class="text-muted mb-0">Theo dõi tiến độ, phòng hẹn và link Google Meet do Cố vấn cung cấp.</p>
+        </div>
+        <a href="{% url 'appointments:advisor_list' %}" class="btn btn-primary fw-medium">
+            <i class="fas fa-calendar-plus me-1"></i>Đặt lịch mới
+        </a>
+    </div>
+
+    {% if appointments %}
+        <div class="row g-3">
+            {% for app in appointments %}
+            <div class="col-12">
+                <div class="card border-0 shadow-sm" style="border-radius: 12px; overflow: hidden;">
+                    <div class="card-body p-4">
+                        <div class="row align-items-center">
+                            <div class="col-md-3 border-end">
+                                <div class="d-flex align-items-center gap-3 mb-2">
+                                    {% if app.advisor.avatar %}
+                                        <img src="{{ app.advisor.avatar.url }}" class="rounded-circle object-fit-cover" style="width: 48px; height: 48px;">
+                                    {% else %}
+                                        <div class="rounded-circle bg-primary bg-opacity-10 text-primary d-flex align-items-center justify-content-center fw-bold" style="width: 48px; height: 48px;">
+                                            {{ app.advisor.user.first_name.0|default:app.advisor.user.username.0|upper }}
+                                        </div>
+                                    {% endif %}
+                                    <div>
+                                        <div class="fw-bold text-dark">{{ app.advisor.display_name }}</div>
+                                        <div class="small text-muted">{{ app.advisor.department.name|default:"Khoa" }}</div>
+                                    </div>
+                                </div>
+                                <div class="badge {{ app.get_status_badge }} px-3 py-1 mb-2">
+                                    {{ app.get_status_display }}
+                                </div>
+                                <div class="small text-muted">
+                                    <i class="fas fa-video me-1"></i>{{ app.get_meeting_type_display }}
+                                </div>
+                            </div>
+
+                            <div class="col-md-6 my-3 my-md-0">
+                                <h5 class="fw-bold text-dark mb-1">{{ app.topic }}</h5>
+                                <div class="text-muted small mb-2">
+                                    <i class="fas fa-calendar-day me-1 text-primary"></i><strong>{{ app.date|date:"l, d/m/Y" }}</strong> | 
+                                    <i class="fas fa-clock me-1 text-primary"></i><strong>{{ app.start_time|time:"H:i" }} - {{ app.end_time|time:"H:i" }}</strong>
+                                </div>
+                                
+                                {% if app.student_notes %}
+                                <p class="text-secondary small mb-2 bg-light p-2 rounded">
+                                    <strong>Ghi chú của bạn:</strong> {{ app.student_notes }}
+                                </p>
+                                {% endif %}
+
+                                {# ĐỊA ĐIỂM HOẶC LINK MEET NẾU ĐÃ CÓ #}
+                                {% if app.location_or_link %}
+                                <div class="p-2 rounded bg-success bg-opacity-10 border border-success-subtle small mb-2">
+                                    <strong class="text-success"><i class="fas fa-map-marker-alt me-1"></i>Địa điểm / Link hẹn:</strong>
+                                    {% if 'http' in app.location_or_link %}
+                                        <a href="{{ app.location_or_link }}" target="_blank" class="fw-bold text-decoration-underline ms-1">
+                                            {{ app.location_or_link }} <i class="fas fa-external-link-alt"></i>
+                                        </a>
+                                    {% else %}
+                                        <span class="fw-bold text-dark ms-1">{{ app.location_or_link }}</span>
+                                    {% endif %}
+                                </div>
+                                {% endif %}
+
+                                {% if app.advisor_notes %}
+                                <div class="small text-primary bg-primary-subtle p-2 rounded">
+                                    <strong>Phản hồi của Cố vấn:</strong> {{ app.advisor_notes }}
+                                </div>
+                                {% endif %}
+
+                                {% if app.status == 'canceled' and app.cancel_reason %}
+                                <div class="small text-danger bg-danger-subtle p-2 rounded">
+                                    <strong>Lý do hủy:</strong> {{ app.cancel_reason }}
+                                </div>
+                                {% endif %}
+                            </div>
+
+                            <div class="col-md-3 text-md-end">
+                                {% if app.status == 'pending' or app.status == 'confirmed' %}
+                                <a href="{% url 'appointments:cancel_appointment' app.id %}" class="btn btn-outline-danger btn-sm">
+                                    <i class="fas fa-times me-1"></i>Hủy lịch hẹn
+                                </a>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="card border-0 shadow-sm py-5 text-center" style="border-radius: 14px;">
+            <div class="card-body">
+                <i class="fas fa-calendar-xmark text-secondary fa-3x mb-3"></i>
+                <h5 class="text-muted mb-2">Bạn chưa có lịch hẹn tư vấn nào.</h5>
+                <p class="text-secondary small mb-3">Khi gặp các thắc mắc học vụ phức tạp, hãy đặt lịch hẹn 1-1 với Thầy/Cô cố vấn nhé!</p>
+                <a href="{% url 'appointments:advisor_list' %}" class="btn btn-primary fw-medium">
+                    <i class="fas fa-calendar-plus me-1"></i>Xem danh sách Cố vấn &amp; Đặt lịch ngay
+                </a>
+            </div>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

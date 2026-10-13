@@ -1,0 +1,86 @@
+{% extends 'admin_panel/base_admin.html' %}
+{% load static %}
+
+{% block title %}Cập nhật lịch hẹn tư vấn - Ban Cố Vấn{% endblock %}
+
+{% block content %}
+<div class="container py-4" style="max-width: 800px;">
+    <div class="card border-0 shadow-sm" style="border-radius: 14px;">
+        <div class="card-header bg-white border-bottom p-4">
+            <h4 class="fw-bold text-dark mb-1">
+                <i class="fas fa-calendar-check text-primary me-2"></i>Chi tiết &amp; Cập nhật lịch hẹn
+            </h4>
+            <div class="text-muted small">Cố vấn xác nhận, gán địa điểm hoặc link Google Meet cho sinh viên.</div>
+        </div>
+
+        <div class="card-body p-4">
+            {# THÔNG TIN SINH VIÊN #}
+            <div class="bg-light p-3 rounded mb-4">
+                <div class="row g-2">
+                    <div class="col-sm-6">
+                        <span class="text-muted small">Sinh viên:</span>
+                        <div class="fw-bold text-dark">{{ appointment.student.get_full_name|default:appointment.student.username }}</div>
+                    </div>
+                    <div class="col-sm-6">
+                        <span class="text-muted small">MSSV / Email:</span>
+                        <div class="fw-bold text-dark">{{ appointment.student.student_id|default:"N/A" }} ({{ appointment.student.email }})</div>
+                    </div>
+                    <div class="col-sm-6 mt-2">
+                        <span class="text-muted small">Thời gian hẹn:</span>
+                        <div class="fw-bold text-primary">{{ appointment.date|date:"l, d/m/Y" }} | {{ appointment.start_time|time:"H:i" }} - {{ appointment.end_time|time:"H:i" }}</div>
+                    </div>
+                    <div class="col-sm-6 mt-2">
+                        <span class="text-muted small">Hình thức:</span>
+                        <div class="fw-bold text-dark">{{ appointment.get_meeting_type_display }}</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label text-muted small fw-bold">CHỦ ĐỀ SINH VIÊN YÊU CẦU:</label>
+                <div class="p-3 border rounded fw-semibold text-dark">{{ appointment.topic }}</div>
+            </div>
+
+            {% if appointment.student_notes %}
+            <div class="mb-4">
+                <label class="form-label text-muted small fw-bold">MÔ TẢ CHI TIẾT CỦA SINH VIÊN:</label>
+                <div class="p-3 border rounded text-secondary bg-white">{{ appointment.student_notes }}</div>
+            </div>
+            {% endif %}
+
+            <form method="post">
+                {% csrf_token %}
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">Trạng thái lịch hẹn <span class="text-danger">*</span></label>
+                    {{ form.status }}
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">Địa điểm phòng gặp hoặc Link Google Meet</label>
+                    {{ form.location_or_link }}
+                    <div class="form-text">
+                        Ví dụ: <code>Văn phòng Khoa CNTT - Phòng A1-203</code> hoặc <code>https://meet.google.com/abc-defg-hij</code>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">Ghi chú phản hồi cho sinh viên / Kết luận buổi tư vấn</label>
+                    {{ form.advisor_notes }}
+                </div>
+
+                <div class="mb-4">
+                    <label class="form-label fw-semibold">Lý do từ chối / hủy (nếu chọn trạng thái Đã hủy)</label>
+                    {{ form.cancel_reason }}
+                </div>
+
+                <div class="d-flex gap-2 justify-content-end">
+                    <a href="{% url 'appointments:manage_appointments' %}" class="btn btn-secondary">Quay lại</a>
+                    <button type="submit" class="btn btn-primary fw-semibold">
+                        <i class="fas fa-save me-1"></i>Lưu thay đổi &amp; Gửi thông báo
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

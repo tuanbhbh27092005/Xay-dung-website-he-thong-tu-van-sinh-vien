@@ -1,0 +1,129 @@
+{% extends 'admin_panel/base_admin.html' %}
+{% load static %}
+
+{% block title %}Cài đặt Khung giờ tiếp sinh viên - Ban Cố Vấn{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h3 class="fw-bold text-dark mb-1">
+                <i class="fas fa-calendar-plus text-primary me-2"></i>Cài đặt Khung giờ tiếp sinh viên
+            </h3>
+            <p class="text-muted mb-0">Thiết lập các ca rảnh định kỳ trong tuần để sinh viên có thể đăng ký lịch tư vấn trực tiếp 1-1.</p>
+        </div>
+        <a href="{% url 'appointments:manage_appointments' %}" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left me-1"></i>Quay lại danh sách hẹn
+        </a>
+    </div>
+
+    <div class="row g-4">
+        {# FORM THÊM KHUNG GIỜ MỚI #}
+        <div class="col-lg-5">
+            <div class="card border-0 shadow-sm" style="border-radius: 14px;">
+                <div class="card-header bg-white border-bottom p-3">
+                    <h5 class="fw-bold mb-0 text-dark"><i class="fas fa-plus-circle text-success me-2"></i>Thêm ca tiếp sinh viên</h5>
+                </div>
+                <div class="card-body p-4">
+                    <form method="post">
+                        {% csrf_token %}
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Ngày trong tuần <span class="text-danger">*</span></label>
+                            {{ form.day_of_week }}
+                        </div>
+
+                        <div class="row g-2 mb-3">
+                            <div class="col-6">
+                                <label class="form-label fw-semibold">Bắt đầu <span class="text-danger">*</span></label>
+                                {{ form.start_time }}
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label fw-semibold">Kết thúc <span class="text-danger">*</span></label>
+                                {{ form.end_time }}
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Thời lượng mỗi ca tư vấn (phút)</label>
+                            {{ form.slot_duration }}
+                            <div class="form-text">Hệ thống sẽ tự chia nhỏ khoảng thời gian thành các ca (vd: 30 phút/ca).</div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Ghi chú địa điểm / Meet mặc định</label>
+                            {{ form.note }}
+                        </div>
+
+                        <div class="form-check mb-4">
+                            {{ form.is_active }}
+                            <label class="form-check-label fw-medium" for="{{ form.is_active.id_for_label }}">
+                                Kích hoạt cho phép sinh viên nhìn thấy và đặt lịch
+                            </label>
+                        </div>
+
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-primary fw-semibold">
+                                <i class="fas fa-save me-1"></i>Thêm khung giờ
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        {# DANH SÁCH KHUNG GIỜ HIỆN TẠI #}
+        <div class="col-lg-7">
+            <div class="card border-0 shadow-sm" style="border-radius: 14px;">
+                <div class="card-header bg-white border-bottom p-3">
+                    <h5 class="fw-bold mb-0 text-dark"><i class="fas fa-clock text-primary me-2"></i>Lịch tiếp sinh viên hiện có</h5>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th class="ps-4">Thứ</th>
+                                    <th>Khung giờ</th>
+                                    <th>Thời lượng</th>
+                                    <th>Ghi chú</th>
+                                    <th>Trạng thái</th>
+                                    <th class="text-end pe-4">Thao tác</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for sch in schedules %}
+                                <tr>
+                                    <td class="ps-4 fw-bold text-primary">{{ sch.get_day_of_week_display }}</td>
+                                    <td class="fw-semibold text-dark">{{ sch.start_time|time:"H:i" }} - {{ sch.end_time|time:"H:i" }}</td>
+                                    <td>{{ sch.slot_duration }} phút</td>
+                                    <td class="small text-muted">{{ sch.note|default:"--" }}</td>
+                                    <td>
+                                        {% if sch.is_active %}
+                                            <span class="badge bg-success-subtle text-success border border-success-subtle">Kích hoạt</span>
+                                        {% else %}
+                                            <span class="badge bg-secondary-subtle text-secondary">Tạm tắt</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="text-end pe-4">
+                                        <a href="{% url 'appointments:delete_schedule' sch.id %}" class="btn btn-sm btn-outline-danger" onclick="return confirm('Bạn có chắc muốn xóa khung giờ này?')">
+                                            <i class="fas fa-trash"></i>
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="6" class="text-center py-5 text-muted">
+                                        <i class="fas fa-calendar-plus fa-2x mb-2 d-block text-secondary"></i>
+                                        Bạn chưa cấu hình khung giờ tiếp sinh viên nào. Hãy thêm ở form bên trái!
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
