@@ -1,6 +1,9 @@
 # HỆ THỐNG WEBSITE TƯ VẤN SINH VIÊN (STUDENT ADVISING & SUPPORT SYSTEM)
 
-> **Đề tài:** Xây dựng website hệ thống tư vấn sinh viên tích hợp AI Chatbot RAG (Retrieval-Augmented Generation)
+> **Đề tài:** Xây dựng website hệ thống tư vấn sinh viên tích hợp AI Chatbot RAG (Retrieval-Augmented Generation)  
+> **Nhóm thực hiện:**  
+> 1. **Phạm Hoàng Thái Tuấn** - MSSV: `24810104` (Nhóm trưởng - Phụ trách Backend core, CSDL & RAG Pipeline)  
+> 2. **Thân Thành Nam** - Thành viên (Phụ trách Frontend, Giao diện Advisor/Admin & Hệ thống thông báo)  
 
 ---
 
