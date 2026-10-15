@@ -262,7 +262,7 @@ def advisor_manage_appointments(request):
 @login_required
 def advisor_update_appointment(request, appointment_id):
     """
-    Cố vấn duyệt / từ chối / hoàn thành và cập nhật link Google Meet/phòng gặp.
+    Cố vấn duyệt / từ chối / hoàn thành và cập nhật link phòng trực tuyến/phòng gặp.
     """
     if not hasattr(request.user, 'advisorprofile'):
         return HttpResponseForbidden("Bạn không có quyền truy cập.")

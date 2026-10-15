@@ -33,7 +33,7 @@ class AppointmentUpdateStatusForm(forms.ModelForm):
         fields = ['status', 'location_or_link', 'advisor_notes', 'cancel_reason']
         widgets = {
             'status': forms.Select(attrs={'class': 'form-select'}),
-            'location_or_link': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Địa điểm gặp (Văn phòng A1-203) hoặc Link Google Meet'}),
+            'location_or_link': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Địa điểm gặp (Văn phòng A1-203) hoặc Link phòng họp trực tuyến'}),
             'advisor_notes': forms.Textarea(attrs={'class': 'form-control', 'rows': 3, 'placeholder': 'Ghi chú / Hướng dẫn thêm cho sinh viên hoặc kết luận sau buổi gặp'}),
             'cancel_reason': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Lý do từ chối / hủy (nếu có)'}),
         }

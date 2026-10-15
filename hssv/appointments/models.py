@@ -64,7 +64,7 @@ class Appointment(models.Model):
 
     MEETING_TYPE_CHOICES = (
         ('offline', 'Trực tiếp tại văn phòng khoa'),
-        ('online', 'Trực tuyến qua Google Meet / Online'),
+        ('online', 'Trực tuyến (Online Meeting)'),
     )
 
     student = models.ForeignKey(
@@ -110,8 +110,8 @@ class Appointment(models.Model):
         max_length=500,
         blank=True,
         default='',
-        verbose_name="Địa điểm gặp hoặc Link Google Meet",
-        help_text="Ví dụ: Phòng A1-203 hoặc https://meet.google.com/xxx-xxxx-xxx"
+        verbose_name="Địa điểm phòng gặp hoặc Link phòng họp trực tuyến",
+        help_text="Ví dụ: Văn phòng Khoa - Phòng A1-203 hoặc phòng họp trực tuyến nội bộ"
     )
     advisor_notes = models.TextField(
         blank=True,
