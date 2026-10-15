@@ -92,7 +92,10 @@ class Question(models.Model):
         return hasattr(user, 'advisorprofile') and user.advisorprofile is not None
 
     def get_author_display(self, viewer=None):
-        """Trả về tên hiển thị của người đặt câu hỏi tuỳ theo quyền của viewer."""
+        """
+        Trả về tên hiển thị của người đặt câu hỏi tuỳ theo quyền của viewer.
+        (Tuần 1: Phạm Hoàng Thái Tuấn tối ưu bảo mật danh tính câu hỏi ẩn danh).
+        """
         if not self.is_anonymous:
             return self.user.get_full_name() or self.user.username
         # Nếu là câu hỏi ẩn danh:

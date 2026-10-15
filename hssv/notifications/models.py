@@ -35,7 +35,9 @@ class Notification(models.Model):
 
     @classmethod
     def notify(cls, recipient, verb, actor=None, target_url=''):
-        """Tạo thông báo mới nhanh chóng."""
+        """
+        Tạo thông báo mới nhanh chóng (Tuần 1: Thân Thành Nam tối ưu chặn tự gửi thông báo cho chính mình).
+        """
         if not recipient:
             return None
         # Không tự gửi thông báo cho chính mình
