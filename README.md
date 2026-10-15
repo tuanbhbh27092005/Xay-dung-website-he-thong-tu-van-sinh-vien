@@ -15,7 +15,7 @@ Hệ thống Website Tư vấn Sinh viên là nền tảng trực tuyến toàn 
 - **Cổng thông tin sinh viên (Student Portal):** Đặt câu hỏi (hỗ trợ ẩn danh), tra cứu hỏi đáp, đánh giá độ hài lòng (CSAT), xem tin tức học vụ, tra cứu thông tin khoa/ngành.
 - **Trợ lý AI Chatbot (AI Advisor):** Trả lời tự động dựa trên semantic search và pipeline RAG (Gemini API + Vector Embeddings), tự động lọc theo Khoa/Ngành/Danh mục.
 - **Phân hệ Cố vấn học tập (Advisor Workspace):** Tiếp nhận câu hỏi thuộc khoa/ngành phụ trách, trả lời câu hỏi, kiểm duyệt nội dung.
-- **Đặt lịch tư vấn trực tiếp 1-1 (Advisor Appointment Booking):** Sinh viên chủ động xem lịch tiếp của Cố vấn học tập/Trưởng khoa, chọn ngày, ca giờ trống và hình thức (Trực tiếp tại văn phòng khoa hoặc qua Google Meet).
+- **Đặt lịch tư vấn trực tiếp 1-1 (Advisor Appointment Booking):** Sinh viên chủ động xem lịch tiếp của Cố vấn học tập/Trưởng khoa, chọn ngày, ca giờ trống và hình thức (Trực tiếp tại văn phòng khoa hoặc Trực tuyến).
 - **Cổng quản trị (Admin Dashboard & Management):** Quản lý người dùng, phân quyền cố vấn, quản lý danh mục/khoa/ngành, kiểm duyệt tin tức và báo cáo thống kê tương tác.
 
 ---
