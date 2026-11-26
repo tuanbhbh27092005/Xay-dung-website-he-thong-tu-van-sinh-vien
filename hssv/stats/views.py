@@ -18,6 +18,10 @@ def is_admin(user):
 
 @login_required
 def statistics_dashboard(request):
+    """
+    Trang Bảng điều khiển Thống kê Báo cáo Quản trị.
+    (Tuần 3: Phạm Hoàng Thái Tuấn tối ưu hóa truy vấn CSDL và bộ lọc thời gian).
+    """
     if not is_admin(request.user):
         messages.error(request, 'Bạn không có quyền truy cập trang thống kê.')
         return redirect('home')
