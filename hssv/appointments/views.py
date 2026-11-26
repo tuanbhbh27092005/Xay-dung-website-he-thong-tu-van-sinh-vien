@@ -189,6 +189,7 @@ def student_appointment_list(request):
 def cancel_appointment(request, appointment_id):
     """
     Hủy lịch hẹn (dành cho sinh viên hoặc cố vấn).
+    (Tuần 2: Thân Thành Nam tối ưu bảo mật phân quyền chống lỗ hổng IDOR).
     """
     appointment = get_object_or_404(Appointment, id=appointment_id)
 

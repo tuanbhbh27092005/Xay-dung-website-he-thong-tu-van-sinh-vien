@@ -1,5 +1,5 @@
 """
-RAG service phiên bản 3 (Phase B):
+RAG service phiên bản 3 (Phase B - Tuần 2: Phạm Hoàng Thái Tuấn tối ưu Fallback Broadening):
 - Hỗ trợ filtered search theo (dept_id, major_id, category_id)
 - Fallback broadening: nếu strict filter không có kết quả, mở rộng dần
 - Threshold thấp hơn khi có metadata filter (vì đã chắc chắn cùng chủ đề)
